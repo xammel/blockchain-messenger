@@ -28,7 +28,8 @@ lazy val root = (project in file("."))
     name := "scala-blockchain",
     libraryDependencies ++= Seq(
       "com.typesafe.akka"        %% "akka-testkit"         % akkaVersion % Test,
-      "org.scalatest"            %% "scalatest"            % "3.0.5"     % "test",
+      "org.scalactic"            %% "scalactic"            % "3.2.17",
+      "org.scalatest"            %% "scalatest"            % "3.2.17"    % "test",
       "com.typesafe.akka"        %% "akka-persistence"     % akkaVersion,
       "org.iq80.leveldb"          % "leveldb"              % "0.10",
       "org.fusesource.leveldbjni" % "leveldbjni-all"       % "1.8",
@@ -38,7 +39,6 @@ lazy val root = (project in file("."))
       "com.typesafe.akka"        %% "akka-stream"          % akkaVersion,
       "com.typesafe.akka"        %% "akka-cluster"         % akkaVersion,
       "com.typesafe.akka"        %% "akka-cluster-tools"   % akkaVersion,
-      "io.spray"                 %% "spray-json"           % "1.3.6"
     ) ++ circeDependencies
   )
 

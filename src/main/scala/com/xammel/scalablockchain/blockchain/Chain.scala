@@ -10,7 +10,9 @@ import java.security.InvalidParameterException
 //TODO, should Chain be Block, and then also have another Blockchain data structure that takes a Seq[Block] ?
 
 sealed trait Chain {
+  //TODO I think this is actually latestIndex in the chain?
   val index: Int
+  //TODO I think this is similarly latestHash in chain
   val previousHash: String
   val transactions: List[Transaction]
   val proof: Long
