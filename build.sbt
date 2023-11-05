@@ -15,13 +15,6 @@ lazy val akkaVersion                    = "2.5.21"
 lazy val akkaHttpVersion                = "10.1.7"
 lazy val akkaPersistenceInmemoryVersion = "2.5.15.1"
 lazy val scalaTestVersion               = "3.0.5"
-lazy val circeVersion                   = "0.14.3"
-
-lazy val circeDependencies = Seq(
-  "io.circe" %% "circe-core",
-  "io.circe" %% "circe-generic",
-  "io.circe" %% "circe-parser"
-).map(_ % circeVersion)
 
 lazy val root = (project in file("."))
   .settings(
@@ -39,7 +32,7 @@ lazy val root = (project in file("."))
       "com.typesafe.akka"        %% "akka-stream"          % akkaVersion,
       "com.typesafe.akka"        %% "akka-cluster"         % akkaVersion,
       "com.typesafe.akka"        %% "akka-cluster-tools"   % akkaVersion,
-    ) ++ circeDependencies
+    )
   )
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.

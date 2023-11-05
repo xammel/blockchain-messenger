@@ -2,10 +2,9 @@ package com.xammel.scalablockchain.blockchain
 
 import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
 import com.xammel.scalablockchain.utils.ErrorMessages.emptyChainAdditionMessage
-import io.circe.generic.auto._
-import io.circe.syntax._
-
+import spray.json._
 import java.security.InvalidParameterException
+import com.xammel.scalablockchain.utils.JsonSupport.ChainLinkJsonFormat
 
 //TODO, should Chain be Block, and then also have another Blockchain data structure that takes a Seq[Block] ?
 
@@ -41,7 +40,7 @@ case class ChainLink(
     tail: Chain = EmptyChain,
     timestamp: Long = System.currentTimeMillis()
 ) extends Chain {
-  val hash = sha256Hash(this.asJson.noSpaces)
+  val hash = sha256Hash(this.toJson.toString)
 }
 
 //TODO review these defaults
