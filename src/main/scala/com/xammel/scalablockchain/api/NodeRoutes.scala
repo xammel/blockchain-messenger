@@ -29,6 +29,7 @@ import com.xammel.scalablockchain.utils.JsonSupport._
         pathEnd {
           concat(
             get {
+              println("inside get")
               val statusFuture: Future[Chain] = (node ? Node.GetStatus).mapTo[Chain]
               onSuccess(statusFuture) { status =>
                 complete(StatusCodes.OK, status)
