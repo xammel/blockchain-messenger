@@ -1,21 +1,19 @@
 package com.xammel.scalablockchain.api
 
 import akka.actor.{ActorRef, ActorSystem}
-import akka.cluster.pubsub.DistributedPubSub
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
-import com.typesafe.config.{Config, ConfigFactory}
+import com.xammel.scalablockchain.actors.Node
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
-import com.xammel.scalablockchain.actors.Node
 object Server extends App with NodeRoutes {
 
   //TODO review this args parsing
   private val address = if (args.length > 0) args(0) else "localhost"
-  private val port = if (args.length > 1) args(1).toInt else 8080
+  private val port    = if (args.length > 1) args(1).toInt else 8080
 
   implicit val system: ActorSystem = ActorSystem("scala-blockchain")
 
