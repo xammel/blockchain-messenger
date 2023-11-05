@@ -13,10 +13,10 @@ object JsonSupport extends DefaultJsonProtocol {
     )
 
     def read(value: JsValue) = {
-      value.asJsObject.getFields("sender", "recipient", "value") match {
+      value.asJsObject.getFields("originator", "beneficiary", "value") match {
         case Seq(JsString(sender), JsString(recipient), JsNumber(amount)) =>
-          new Transaction(sender, recipient, amount.toLong)
-        case _ => throw new DeserializationException("Transaction expected")
+          Transaction(sender, recipient, amount.toLong)
+        case _ => throw DeserializationException("Transaction expected")
       }
     }
   }
