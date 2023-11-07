@@ -66,8 +66,8 @@ trait NodeRoutes extends SprayJsonSupport {
           },
           post {
             entity(as[Transaction]) { transaction =>
-              val transactionCreated: Future[Int] =
-                (node ? AddTransaction(transaction)).mapTo[Int]
+              val transactionCreated: Future[Long] =
+                (node ? AddTransaction(transaction)).mapTo[Long]
               onSuccess(transactionCreated) { done =>
                 complete((StatusCodes.Created, done.toString))
               }

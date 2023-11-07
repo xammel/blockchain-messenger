@@ -2,11 +2,8 @@ package com.xammel.scalablockchain.blockchain
 
 import com.xammel.scalablockchain.crypto.Crypto
 import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
-import com.xammel.scalablockchain.utils.ErrorMessages.emptyChainAdditionMessage
-import spray.json._
-
-import java.security.InvalidParameterException
 import com.xammel.scalablockchain.json.JsonSupport.PopulatedBlockFormat
+import spray.json._
 
 //TODO, should Chain be Block, and then also have another Blockchain data structure that takes a Seq[Block] ?
 
@@ -56,19 +53,20 @@ import com.xammel.scalablockchain.json.JsonSupport.PopulatedBlockFormat
 
 sealed trait Chain {
   val blocks: List[Block]
-  val numberOfBlocks               = blocks.length
-  val mostRecentBlocksIndex: Long  = blocks.minBy(_.timestamp).index //TODO make safe accessor?
-  val mostRecentBlocksHash: String = blocks.minBy(_.timestamp).hash  //TODO make safe accessor?
+  def numberOfBlocks               = blocks.length
+  def mostRecentBlocksIndex: Long  = blocks.minBy(_.timestamp).index //TODO make safe accessor?
+  def mostRecentBlocksHash: String = blocks.minBy(_.timestamp).hash  //TODO make safe accessor?
 
   def addBlock(transactions: List[Transaction], proof: Long): NonEmptyChain =
     NonEmptyChain(blocks = this.blocks :+ createNextBlock(transactions, proof))
 
-  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = PopulatedBlock(
-    index = this.mostRecentBlocksIndex + 1,
-    transactions = transactions,
-    proof = proof,
-    timestamp = System.currentTimeMillis()
-  )
+  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock =
+    PopulatedBlock(
+      index = this.mostRecentBlocksIndex + 1,
+      transactions = transactions,
+      proof = proof,
+      timestamp = System.currentTimeMillis()
+    )
 }
 
 object Chain {}
@@ -91,7 +89,7 @@ case class PopulatedBlock(
     proof: Long,
     timestamp: Long
 ) extends Block {
-  val hash = sha256Hash(this.toJson.toString)
+  val hash = sha256Hash(this.toJson(PopulatedBlockFormat).toString)
 }
 
 case object GenesisBlock extends Block {

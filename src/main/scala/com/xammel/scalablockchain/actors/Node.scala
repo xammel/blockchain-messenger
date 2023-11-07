@@ -26,7 +26,7 @@ class Node(nodeId: String) extends Actor with ActorLogging {
     case AddTransaction(transaction) =>
       val node = sender()
       broker ! Broker.AddTransactionToPending(transaction)
-      (blockchain ? Blockchain.GetLastIndex).mapTo[Int] onComplete {
+      (blockchain ? Blockchain.GetLastIndex).mapTo[Long] onComplete {
         case Success(index) => node ! (index + 1)
         case Failure(e)     => node ! akka.actor.Status.Failure(e)
       }
@@ -71,8 +71,11 @@ class Node(nodeId: String) extends Actor with ActorLogging {
   //TODO can this just return Unit?
   def waitForSolution(solution: Future[Long]): Future[Unit] = Future {
     solution onComplete {
+      //TODO should there be a criteria which only allows blocks to be mined if there
+      // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
+      // transaction in them
       case Success(proof) =>
-        broker ! Broker.AddTransactionToPending(createCoinbaseTransaction(nodeId))
+        broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
         self ! AddBlock(proof)
         miner ! Miner.ReadyYourself
       case Failure(e) => log.error(s"Error finding PoW solution: ${e.getMessage}")
@@ -103,6 +106,6 @@ object Node {
 
   def props(nodeId: String): Props = Props(new Node(nodeId))
 
-  //TODO edit
-  def createCoinbaseTransaction(nodeId: String) = Transaction("coinbase", nodeId, 100)
+  //TODO edit amount to be configurable
+  def createMiningRewardTransaction(nodeId: String) = Transaction("theBank", nodeId, 100)
 }
