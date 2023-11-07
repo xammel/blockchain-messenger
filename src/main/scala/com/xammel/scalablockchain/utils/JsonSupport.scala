@@ -33,7 +33,7 @@ object JsonSupport extends DefaultJsonProtocol {
       case Seq(
             JsNumber(index),
             JsNumber(proof),
-            values,
+            transactions,
             JsString(previousHash),
             tail,
             JsNumber(timestamp)
@@ -41,7 +41,7 @@ object JsonSupport extends DefaultJsonProtocol {
         ChainLink(
           index = index.toInt,
           proof = proof.toLong,
-          transactions = values.convertTo[List[Transaction]],
+          transactions = transactions.convertTo[List[Transaction]],
           previousHash = previousHash,
           tail = tail.convertTo(ChainJsonFormat),
           timestamp = timestamp.toLong
@@ -52,7 +52,7 @@ object JsonSupport extends DefaultJsonProtocol {
     override def write(obj: ChainLink): JsValue = JsObject(
       "index"        -> JsNumber(obj.index),
       "proof"        -> JsNumber(obj.proof),
-      "values"       -> JsArray(obj.transactions.map(_.toJson).toVector),
+      "transactions"       -> JsArray(obj.transactions.map(_.toJson).toVector),
       "previousHash" -> JsString(obj.previousHash),
       "timestamp"    -> JsNumber(obj.timestamp),
       "tail"         -> ChainJsonFormat.write(obj.tail)
