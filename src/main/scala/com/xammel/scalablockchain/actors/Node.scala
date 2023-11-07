@@ -1,6 +1,6 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, Props, Status}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
@@ -21,6 +21,7 @@ class Node(nodeId: String) extends Actor with ActorLogging {
   val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId))
 
   miner ! ReadyYourself
+
   override def receive: Receive = {
     case AddTransaction(transaction) =>
       val node = sender()
@@ -45,15 +46,16 @@ class Node(nodeId: String) extends Actor with ActorLogging {
                 Blockchain.AddBlockCommand(transactions, proof, System.currentTimeMillis()),
                 node
               ) //TODO review this timestamp
-            case Failure(e) => node ! akka.actor.Status.Failure(e)
+            case Failure(e) => node ! Status.Failure(e)
           }
           broker ! Broker.ClearPendingTransactions
-        case Failure(e) => node ! akka.actor.Status.Failure(e)
+        case Failure(e) => node ! Status.Failure(e)
       }
     case Mine =>
       val node = sender()
       (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {
         case Success(hash) =>
+          //TODO should this not be .mapTo[Long]? this results in Future[Future[Long]]
           (miner ? Miner.Mine(hash)).mapTo[Future[Long]] onComplete {
             case Success(solution) => waitForSolution(solution)
             case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
@@ -66,7 +68,8 @@ class Node(nodeId: String) extends Actor with ActorLogging {
     case GetLastBlockHash  => blockchain forward Blockchain.GetLastHash
   }
 
-  def waitForSolution(solution: Future[Long]) = Future {
+  //TODO can this just return Unit?
+  def waitForSolution(solution: Future[Long]): Future[Unit] = Future {
     solution onComplete {
       case Success(proof) =>
         broker ! Broker.AddTransactionToPending(createCoinbaseTransaction(nodeId))

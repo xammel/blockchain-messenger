@@ -52,7 +52,7 @@ object JsonSupport extends DefaultJsonProtocol {
     override def write(obj: ChainLink): JsValue = JsObject(
       "index"        -> JsNumber(obj.index),
       "proof"        -> JsNumber(obj.proof),
-      "transactions"       -> JsArray(obj.transactions.map(_.toJson).toVector),
+      "transactions" -> JsArray(obj.transactions.map(_.toJson).toVector),
       "previousHash" -> JsString(obj.previousHash),
       "timestamp"    -> JsNumber(obj.timestamp),
       "tail"         -> ChainJsonFormat.write(obj.tail)
