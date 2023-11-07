@@ -3,7 +3,8 @@ package com.xammel.scalablockchain.actors
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import com.xammel.scalablockchain.actors.Blockchain._
-import com.xammel.scalablockchain.blockchain.{Chain, ChainLink, Transaction}
+import com.xammel.scalablockchain.blockchain.{Chain, Transaction}
+
 class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with ActorLogging {
 
   override def persistenceId: String = s"chainer-$nodeId"
@@ -12,7 +13,9 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
 
   override def receiveRecover: Receive = {
     case SnapshotOffer(metadata, snapshot: State) => {
-      log.info(s"Recovering from snapshot ${metadata.sequenceNr} at block ${snapshot.chain.index}")
+      log.info(
+        s"Recovering from snapshot ${metadata.sequenceNr} at block ${snapshot.chain.mostRecentBlocksIndex}"
+      )
       state = snapshot
     }
     case RecoveryCompleted    => log.info("Recovery completed")
@@ -32,30 +35,26 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
       //TODO This is a workaround to wait until the state is persisted
       deferAsync(Nil) { _ =>
         saveSnapshot(state)
-        sender() ! state.chain.index
+        sender() ! state.chain.mostRecentBlocksIndex
       }
 
     case AddBlockCommand(_, _, _) => log.error("invalid add block command")
     case GetChain                 => sender() ! state.chain
-    case GetLastHash              => sender() ! state.chain.previousHash
-    case GetLastIndex             => sender() ! state.chain.index
+    case GetLastHash              => sender() ! state.chain.mostRecentBlocksHash
+    case GetLastIndex             => sender() ! state.chain.mostRecentBlocksIndex
   }
 
-  def updateState(event: BlockchainEvent) = event match {
-    case AddBlockEvent(transactions, proof, timestamp) =>
-      state = State(
-        ChainLink(state.chain.index + 1, proof, transactions, timestamp = timestamp) :: state.chain
-      )
-      log.info(s"Added block ${state.chain.index} containing ${transactions.size} transactions")
+  def updateState(event: AddBlockEvent) = {
+    state = State(state.chain.addBlock(event.transactions, event.proof))
+    log.info(
+      s"Added block ${state.chain.mostRecentBlocksIndex} containing ${event.transactions.length} transactions"
+    )
   }
 
 }
 object Blockchain {
 
-  sealed trait BlockchainEvent
-
   case class AddBlockEvent(transactions: List[Transaction], proof: Long, timestamp: Long)
-      extends BlockchainEvent
 
   sealed trait BlockchainCommand
 

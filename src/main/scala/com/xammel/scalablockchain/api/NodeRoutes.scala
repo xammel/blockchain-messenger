@@ -10,7 +10,7 @@ import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.actors.Node.{AddTransaction, GetTransactions, Mine}
 import com.xammel.scalablockchain.blockchain.{Chain, Transaction}
-import com.xammel.scalablockchain.utils.JsonSupport._
+import com.xammel.scalablockchain.json.JsonSupport._
 
 import scala.concurrent.Future
 import scala.concurrent.duration._

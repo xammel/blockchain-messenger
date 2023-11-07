@@ -11,8 +11,8 @@ class Miner extends Actor with ActorLogging {
 
   import context._
 
-  override def receive: Receive = { case ReadyYourself =>
-    become(ready)
+  override def receive: Receive = {
+    case ReadyYourself => become(ready)
   }
 
   def ready: Receive = validate orElse {
