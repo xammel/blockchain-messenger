@@ -32,16 +32,12 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
         askTransactionsFromNode
       },
       post {
-        askNodeToAddTransaction
+        tellNodeToAddTransaction
       }
     )
   }
 
-  lazy val mineRoutes: Route = path("mine") {
-    get {
-      tellNodeToMine
-    }
-  }
+  lazy val mineRoutes: Route = path("mine") { get { tellNodeToMine } }
 
   private def askStatusFromNode: Route = {
     val statusFuture: Future[Chain] = (node ? Node.GetStatus).mapTo[Chain]
@@ -58,7 +54,7 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
     }
   }
 
-  private def askNodeToAddTransaction: Route = {
+  private def tellNodeToAddTransaction: Route = {
     entity(as[Transaction]) { transaction =>
       node ! AddTransaction(transaction)
       complete(StatusCodes.OK)
