@@ -5,7 +5,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
 import com.xammel.scalablockchain.actors.Node._
-import com.xammel.scalablockchain.blockchain.{EmptyChain, Transaction}
+import com.xammel.scalablockchain.models.{EmptyChain, Transaction}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -23,13 +23,7 @@ class Node(nodeId: String) extends Actor with ActorLogging {
   miner ! ReadyYourself
 
   override def receive: Receive = {
-    case AddTransaction(transaction) =>
-      val node = sender()
-      broker ! Broker.AddTransactionToPending(transaction)
-      (blockchain ? Blockchain.GetLastIndex).mapTo[Long] onComplete {
-        case Success(index) => node ! (index + 1)
-        case Failure(e)     => node ! akka.actor.Status.Failure(e)
-      }
+    case AddTransaction(transaction) => broker ! Broker.AddTransactionToPending(transaction)
     case CheckPowSolution(solution) =>
       val node = sender()
       (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {

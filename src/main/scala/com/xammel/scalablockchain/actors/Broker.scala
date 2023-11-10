@@ -2,7 +2,7 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, Props}
 import com.xammel.scalablockchain.actors.Broker._
-import com.xammel.scalablockchain.blockchain.Transaction
+import com.xammel.scalablockchain.models.Transaction
 
 class Broker extends Actor with ActorLogging {
 
@@ -12,8 +12,8 @@ class Broker extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case AddTransactionToPending(transaction) =>
-      pending = transaction :: pending
-      log.info(s"Added $transaction to pending Transaction")
+      pending = pending :+ transaction
+      log.info(s"Added transaction ${transaction.transactionId} to pending transactions")
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
       sender() ! pending

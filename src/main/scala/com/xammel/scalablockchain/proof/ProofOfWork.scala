@@ -11,11 +11,11 @@ object ProofOfWork {
 
   //TODO make 4 a configurable N ?
   def isValidProof(hash: String, proof: Long) = {
-    //TODO beware, in the github impl this is (concatted).asJson which adds quote marks around it...
-    val concat = hash + proof.toString
-    val hashed = sha256Hash(concat)
 
-    hashed.take(4).forall(_ == '0')
+    val concatenated = hash + proof.toString
+    val hashed = sha256Hash(concatenated)
+
+    hashed.take(5).forall(_ == '0')
   }
 
 }

@@ -1,16 +1,16 @@
-package com.xammel.scalablockchain.blockchain
+package com.xammel.scalablockchain.models
 
 import com.xammel.scalablockchain.crypto.Crypto
 import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
-import com.xammel.scalablockchain.json.JsonSupport.PopulatedBlockFormat
-import spray.json._
+
 import scala.util.Random
 
 sealed trait Chain {
   val blocks: List[Block]
-  def numberOfBlocks               = blocks.length
-  def mostRecentBlocksIndex: Long  = blocks.minBy(_.timestamp).index //TODO unsafe accessor
-  def mostRecentBlocksHash: String = blocks.minBy(_.timestamp).hash  //TODO unsafe accessor
+  def numberOfBlocks                 = blocks.length
+  private def mostRecentBlock: Block = blocks.maxBy(_.timestamp) //TODO unsafe accessor
+  def mostRecentBlocksIndex: Long    = mostRecentBlock.index
+  def mostRecentBlocksHash: String   = mostRecentBlock.hash
 
   def addBlock(transactions: List[Transaction], proof: Long): NonEmptyChain =
     NonEmptyChain(blocks = this.blocks :+ createNextBlock(transactions, proof))
@@ -42,7 +42,7 @@ case class PopulatedBlock(
     proof: Long,
     timestamp: Long
 ) extends Block {
-  val hash = sha256Hash(this.toJson(PopulatedBlockFormat).toString)
+  val hash = sha256Hash(this.toString)
 }
 
 case object GenesisBlock extends Block {

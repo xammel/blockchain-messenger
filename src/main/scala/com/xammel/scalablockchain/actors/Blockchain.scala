@@ -3,7 +3,7 @@ package com.xammel.scalablockchain.actors
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
 import com.xammel.scalablockchain.actors.Blockchain._
-import com.xammel.scalablockchain.blockchain.{Chain, Transaction}
+import com.xammel.scalablockchain.models.{Chain, Transaction}
 
 class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with ActorLogging {
 

@@ -9,13 +9,13 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.actors.Node.{AddTransaction, GetTransactions, Mine}
-import com.xammel.scalablockchain.blockchain.{Chain, Transaction}
-import com.xammel.scalablockchain.json.JsonSupport._
+import com.xammel.scalablockchain.json.JsonSupport
+import com.xammel.scalablockchain.models.{Chain, Transaction}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-trait NodeRoutes extends SprayJsonSupport {
+trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   implicit def system: ActorSystem
 
@@ -24,71 +24,50 @@ trait NodeRoutes extends SprayJsonSupport {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
-  lazy val statusRoutes: Route = pathPrefix("status") {
-    concat(pathEnd {
-      concat(
-        get {
-          val statusFuture: Future[Chain] = (node ? Node.GetStatus).mapTo[Chain]
-          onSuccess(statusFuture) { status =>
-            complete(StatusCodes.OK, status)
-          }
-        }
-      )
-    })
-//        ,
-//        pathPrefix("members") {
-//          concat(
-//            pathEnd {
-//              concat(
-//                get {
-//                  val membersFuture: Future[List[String]] = (clusterManager ? GetMembers).mapTo[List[String]]
-//                  onSuccess(membersFuture) { members =>
-//                    complete(StatusCodes.OK, members)
-//                  }
-//                }
-//              )
-//            }
-//          )
-//        }
-//      )
-  }
+  lazy val statusRoutes: Route = path("status") { get { askStatusFromNode } }
 
-  lazy val transactionRoutes: Route = pathPrefix("transactions") {
+  lazy val transactionRoutes: Route = path("transactions") {
     concat(
-      pathEnd {
-        concat(
-          get {
-            val transactionsRetrieved: Future[List[Transaction]] =
-              (node ? GetTransactions).mapTo[List[Transaction]]
-            onSuccess(transactionsRetrieved) { transactions =>
-              complete(transactions.toList)
-            }
-          },
-          post {
-            entity(as[Transaction]) { transaction =>
-              val transactionCreated: Future[Long] =
-                (node ? AddTransaction(transaction)).mapTo[Long]
-              onSuccess(transactionCreated) { done =>
-                complete((StatusCodes.Created, done.toString))
-              }
-            }
-          }
-        )
+      get {
+        askTransactionsFromNode
+      },
+      post {
+        askNodeToAddTransaction
       }
     )
   }
 
-  lazy val mineRoutes: Route = pathPrefix("mine") {
-    concat(
-      pathEnd {
-        concat(
-          get {
-            node ! Mine
-            complete(StatusCodes.OK)
-          }
-        )
-      }
-    )
+  lazy val mineRoutes: Route = path("mine") {
+    get {
+      tellNodeToMine
+    }
+  }
+
+  private def askStatusFromNode: Route = {
+    val statusFuture: Future[Chain] = (node ? Node.GetStatus).mapTo[Chain]
+    onSuccess(statusFuture) { status =>
+      complete(StatusCodes.OK, status)
+    }
+  }
+
+  private def askTransactionsFromNode: Route = {
+    val transactionsRetrieved: Future[List[Transaction]] =
+      (node ? GetTransactions).mapTo[List[Transaction]]
+    onSuccess(transactionsRetrieved) { transactions =>
+      complete(transactions.toList)
+    }
+  }
+
+  private def askNodeToAddTransaction: Route = {
+    entity(as[Transaction]) { transaction =>
+      node ! AddTransaction(transaction)
+      complete(StatusCodes.OK)
+    }
+  }
+
+  private def tellNodeToMine: Route = {
+    node ! Mine
+    complete(StatusCodes.OK)
   }
 
 }
