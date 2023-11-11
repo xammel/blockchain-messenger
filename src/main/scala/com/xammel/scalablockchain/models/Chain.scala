@@ -5,7 +5,7 @@ import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
 
 import scala.util.Random
 
-sealed trait Chain {
+ sealed trait Chain {
   val blocks: List[Block]
   def numberOfBlocks                 = blocks.length
   private def mostRecentBlock: Block = blocks.maxBy(_.timestamp) //TODO unsafe accessor
@@ -15,13 +15,16 @@ sealed trait Chain {
   def addBlock(transactions: List[Transaction], proof: Long): NonEmptyChain =
     NonEmptyChain(blocks = this.blocks :+ createNextBlock(transactions, proof))
 
-  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock =
+  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = {
+    println(s"mostRecentBlockHash = ${this.mostRecentBlocksHash}")
+    println(s"mostRecentIndex = ${this.mostRecentBlocksIndex}")
     PopulatedBlock(
       index = this.mostRecentBlocksIndex + 1,
       transactions = transactions,
       proof = proof,
       timestamp = System.currentTimeMillis()
     )
+  }
 }
 
 case class NonEmptyChain(blocks: List[Block]) extends Chain
@@ -46,8 +49,7 @@ case class PopulatedBlock(
 }
 
 case object GenesisBlock extends Block {
-  private val randomSeedString = Random.alphanumeric.take(10).toString
   override val index: Long     = 0
-  override val hash: String    = Crypto.sha256Hash(randomSeedString)
-  override val timestamp: Long = System.currentTimeMillis()
+  override val hash: String    = Crypto.sha256Hash("GenesisBlock")
+  override val timestamp: Long = 0
 }

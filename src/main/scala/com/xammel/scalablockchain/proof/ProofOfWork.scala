@@ -34,7 +34,7 @@ object ProofOfWork {
     val concatenated = hash + proof.toString
     val hashed = sha256Hash(concatenated)
 
-    hashed.take(5).forall(_ == '0')
+    hashed.take(4).forall(_ == '0')
   }
 
 }

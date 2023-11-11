@@ -9,9 +9,9 @@ trait JsonSupport extends DefaultJsonProtocol {
   implicit object TransactionJsonFormat extends RootJsonFormat[Transaction] {
     def write(transaction: Transaction): JsValue = JsObject(
       transactionId -> JsString(transaction.transactionId),
-      originator  -> JsString(transaction.originator),
-      beneficiary -> JsString(transaction.beneficiary),
-      value       -> JsNumber(transaction.value)
+      originator    -> JsString(transaction.originator),
+      beneficiary   -> JsString(transaction.beneficiary),
+      value         -> JsNumber(transaction.value)
     )
 
     def read(jsValue: JsValue): Transaction = {
@@ -95,23 +95,19 @@ trait JsonSupport extends DefaultJsonProtocol {
 
     def read(json: JsValue): Chain = {
       json.asJsObject.getFields(blocks) match {
-        case Seq(blocks) => {
+        case Seq(blocks) =>
           val blockList = blocks.convertTo[List[Block]]
-          //TODO I think this will initialize a new EmptyChain and therefore create a new timestamp...
-          if (blockList.length <= 1) EmptyChain
-          else json.convertTo[NonEmptyChain]
-        }
+          if (blockList.isEmpty) EmptyChain else NonEmptyChain(blockList)
       }
     }
   }
-
 }
 
 object JsonSupport {
   val transactionId = "transactionId"
-  val originator  = "originator"
-  val beneficiary = "beneficiary"
-  val value       = "value"
+  val originator    = "originator"
+  val beneficiary   = "beneficiary"
+  val value         = "value"
 
   val index        = "index"
   val hash         = "hash"

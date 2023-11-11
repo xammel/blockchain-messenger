@@ -46,15 +46,17 @@ class Node(nodeId: String) extends Actor with ActorLogging {
         case Failure(e) => node ! Status.Failure(e)
       }
     case Mine =>
-      val node = sender()
-      (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {
+      val node                           = sender()
+      val lastHashFuture: Future[String] = (blockchain ? Blockchain.GetLastHash).mapTo[String]
+      lastHashFuture onComplete {
         case Success(hash) =>
-          //TODO should this not be .mapTo[Long]? this results in Future[Future[Long]]
-          (miner ? Miner.Mine(hash)).mapTo[Future[Long]] onComplete {
-            case Success(solution) => waitForSolution(solution)
+          val proofOfWorkFuture: Future[Long] =
+            (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
+          proofOfWorkFuture onComplete {
+            case Success(solution) => rewardMiningAndAddBlock(solution)
             case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
           }
-        case Failure(e) => node ! akka.actor.Status.Failure(e)
+        case Failure(e) => node ! akka.actor.Status.Failure(e)  
       }
     case GetTransactions   => broker forward Broker.GetPendingTransactions
     case GetStatus         => blockchain forward Blockchain.GetChain
@@ -63,17 +65,13 @@ class Node(nodeId: String) extends Actor with ActorLogging {
   }
 
   //TODO can this just return Unit?
-  def waitForSolution(solution: Future[Long]): Future[Unit] = Future {
-    solution onComplete {
-      //TODO should there be a criteria which only allows blocks to be mined if there
-      // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
-      // transaction in them
-      case Success(proof) =>
-        broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
-        self ! AddBlock(proof)
-        miner ! Miner.ReadyYourself
-      case Failure(e) => log.error(s"Error finding PoW solution: ${e.getMessage}")
-    }
+  def rewardMiningAndAddBlock(solution: Long): Unit = {
+    //TODO should there be a criteria which only allows blocks to be mined if there
+    // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
+    // transaction in them
+    broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
+    self ! AddBlock(solution)
+    miner ! Miner.ReadyYourself
   }
 }
 
