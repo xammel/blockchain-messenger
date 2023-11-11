@@ -12,49 +12,38 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
   var state = State(chain)
 
   override def receiveRecover: Receive = {
-    case SnapshotOffer(metadata, snapshot: State) => {
+    case SnapshotOffer(metadata, snapshot: State) =>
       log.info(
         s"Recovering from snapshot ${metadata.sequenceNr} at block ${snapshot.chain.mostRecentBlocksIndex}"
       )
       state = snapshot
-    }
     case RecoveryCompleted    => log.info("Recovery completed")
-    case event: AddBlockEvent => updateState(event)
+    case event: AddBlockCommand => updateState(event)
   }
 
-  override def receiveCommand: Receive = {
-    case SaveSnapshotSuccess(metadata) =>
-      log.info(s"Snapshot ${metadata.sequenceNr} saved successfully")
-    case SaveSnapshotFailure(metadata, reason) =>
-      log.error(s"Error saving snapshot ${metadata.sequenceNr}: ${reason.getMessage}")
-    case AddBlockCommand(transactions: List[Transaction], proof: Long, timestamp) =>
-      persist(AddBlockEvent(transactions, proof, timestamp)) { event =>
-        updateState(event)
-      }
-
-      //TODO This is a workaround to wait until the state is persisted
-      deferAsync(Nil) { _ =>
-        saveSnapshot(state)
-        sender() ! state.chain.mostRecentBlocksIndex
-      }
-
-    case AddBlockCommand(_, _, _) => log.error("invalid add block command")
+  override def receiveCommand: Receive = snapshotResponseHandling orElse {
+    case command: AddBlockCommand => persist(command)(updateState(_))
     case GetChain                 => sender() ! state.chain
     case GetLastHash              => sender() ! state.chain.mostRecentBlocksHash
     case GetLastIndex             => sender() ! state.chain.mostRecentBlocksIndex
   }
 
-  def updateState(event: AddBlockEvent) = {
-    state = State(state.chain.addBlock(event.transactions, event.proof))
+  private def snapshotResponseHandling: Receive = {
+    case SaveSnapshotSuccess(metadata) =>
+      log.info(s"Snapshot ${metadata.sequenceNr} saved successfully")
+    case SaveSnapshotFailure(metadata, reason) =>
+      log.error(s"Error saving snapshot ${metadata.sequenceNr}: ${reason.getMessage}")
+  }
+
+  def updateState(command: AddBlockCommand) = {
+    state = State(state.chain.addBlock(command.transactions, command.proof))
     log.info(
-      s"Added block ${state.chain.mostRecentBlocksIndex} containing ${event.transactions.length} transactions"
+      s"Added block ${state.chain.mostRecentBlocksIndex} containing ${command.transactions.length} transactions"
     )
   }
 
 }
 object Blockchain {
-
-  case class AddBlockEvent(transactions: List[Transaction], proof: Long, timestamp: Long)
 
   sealed trait BlockchainCommand
 

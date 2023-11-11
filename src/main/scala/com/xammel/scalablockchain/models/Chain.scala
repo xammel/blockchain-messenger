@@ -15,16 +15,12 @@ import scala.util.Random
   def addBlock(transactions: List[Transaction], proof: Long): NonEmptyChain =
     NonEmptyChain(blocks = this.blocks :+ createNextBlock(transactions, proof))
 
-  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = {
-    println(s"mostRecentBlockHash = ${this.mostRecentBlocksHash}")
-    println(s"mostRecentIndex = ${this.mostRecentBlocksIndex}")
-    PopulatedBlock(
+  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = PopulatedBlock(
       index = this.mostRecentBlocksIndex + 1,
       transactions = transactions,
       proof = proof,
       timestamp = System.currentTimeMillis()
     )
-  }
 }
 
 case class NonEmptyChain(blocks: List[Block]) extends Chain
