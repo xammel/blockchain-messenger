@@ -18,6 +18,9 @@ class Broker extends Actor with ActorLogging {
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
       sender() ! pending
+    case DiffTransaction(externalTransactions) => {
+      pending = pending diff externalTransactions
+    }
     case ClearPendingTransactions =>
       pending = Nil
       log.info("Cleared pending transaction List")
@@ -31,6 +34,7 @@ object Broker {
   case class AddTransactionToPending(transaction: Transaction) extends BrokerMessage
   case object GetPendingTransactions                           extends BrokerMessage
   case object ClearPendingTransactions                         extends BrokerMessage
+  case class DiffTransaction(transactions: List[Transaction]) extends BrokerMessage
 
   val props: Props = Props(new Broker)
 }

@@ -1,6 +1,7 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
+import akka.cluster.pubsub.DistributedPubSubMediator.Subscribe
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
@@ -16,6 +17,9 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
+  mediator ! Subscribe("newBlock", self)
+  mediator ! Subscribe("transaction", self)
+
   val broker     = context.actorOf(Broker.props)
   val miner      = context.actorOf(Miner.props)
   val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId))
@@ -23,6 +27,12 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
   miner ! ReadyYourself
 
   override def receive: Receive = {
+    case TransactionMessage(transaction, messageNodeId) => {
+      log.info(s"Received transaction message from $messageNodeId")
+      if (messageNodeId != nodeId) {
+        broker ! Broker.AddTransactionToPending(transaction)
+      }
+    }
     case AddTransaction(transaction) => broker ! Broker.AddTransactionToPending(transaction)
     case CheckPowSolution(solution) =>
       val node = sender()
@@ -80,6 +90,8 @@ object Node {
 
   case class AddTransaction(transaction: Transaction) extends NodeMessage
 
+  case class TransactionMessage(transaction: Transaction, nodeId: String) extends NodeMessage
+
   case class CheckPowSolution(solution: Long) extends NodeMessage
 
   case class AddBlock(proof: Long) extends NodeMessage
@@ -87,8 +99,6 @@ object Node {
   case object GetTransactions extends NodeMessage
 
   case object Mine extends NodeMessage
-
-  case object StopMining extends NodeMessage
 
   case object GetStatus extends NodeMessage
 
