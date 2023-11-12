@@ -1,6 +1,6 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{Actor, ActorLogging, Props, Status}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
@@ -12,7 +12,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
-class Node(nodeId: String) extends Actor with ActorLogging {
+class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
@@ -56,7 +56,7 @@ class Node(nodeId: String) extends Actor with ActorLogging {
             case Success(solution) => rewardMiningAndAddBlock(solution)
             case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
           }
-        case Failure(e) => node ! akka.actor.Status.Failure(e)  
+        case Failure(e) => node ! akka.actor.Status.Failure(e)
       }
     case GetTransactions   => broker forward Broker.GetPendingTransactions
     case GetStatus         => blockchain forward Blockchain.GetChain
@@ -96,7 +96,7 @@ object Node {
 
   case object GetLastBlockHash extends NodeMessage
 
-  def props(nodeId: String): Props = Props(new Node(nodeId))
+  def props(nodeId: String, mediator: ActorRef): Props = Props(new Node(nodeId, mediator))
 
   //TODO edit amount to be configurable
   def createMiningRewardTransaction(nodeId: String) = Transaction("theBank", nodeId, 100)

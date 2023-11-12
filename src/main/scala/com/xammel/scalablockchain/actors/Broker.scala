@@ -1,6 +1,7 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, Props}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
 import com.xammel.scalablockchain.actors.Broker._
 import com.xammel.scalablockchain.models.Transaction
 
@@ -20,6 +21,8 @@ class Broker extends Actor with ActorLogging {
     case ClearPendingTransactions =>
       pending = Nil
       log.info("Cleared pending transaction List")
+    case SubscribeAck(Subscribe("transaction", None, `self`)) =>
+      log.info("subscribing")
   }
 }
 

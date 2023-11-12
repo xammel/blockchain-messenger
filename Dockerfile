@@ -1,3 +1,5 @@
+# Example usage: docker build --build-arg SBT_VERSION="1.2.7" --build-arg SSH_PRIVATE_KEY="$(cat ./docker/repo-key)" -t xammel/scala-blockchain .
+
 FROM openjdk:8-jre-alpine
 
 ARG SSH_PRIVATE_KEY
