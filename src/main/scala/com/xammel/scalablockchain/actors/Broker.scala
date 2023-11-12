@@ -17,14 +17,9 @@ class Broker extends Actor with ActorLogging {
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
       sender() ! pending
-    //    case DiffTransaction(externalTransactions) => {
-//      pending = pending diff externalTransactions
-//    }
     case ClearPendingTransactions =>
       pending = Nil
       log.info("Cleared pending transaction List")
-//    case SubscribeAck(Subscribe("transaction", None, `self`)) =>
-//      log.info("subscribing")
   }
 }
 

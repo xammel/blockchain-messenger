@@ -5,22 +5,22 @@ import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
 
 import scala.util.Random
 
- sealed trait Chain {
+sealed trait Chain {
   val blocks: List[Block]
-  def numberOfBlocks                 = blocks.length
+
   private def mostRecentBlock: Block = blocks.maxBy(_.timestamp) //TODO unsafe accessor
   def mostRecentBlocksIndex: Long    = mostRecentBlock.index
   def mostRecentBlocksHash: String   = mostRecentBlock.hash
 
   def addBlock(transactions: List[Transaction], proof: Long): NonEmptyChain =
-    NonEmptyChain(blocks = this.blocks :+ createNextBlock(transactions, proof))
+    NonEmptyChain(blocks = this.blocks :+ createNewBlock(transactions, proof))
 
-  def createNextBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = PopulatedBlock(
-      index = this.mostRecentBlocksIndex + 1,
-      transactions = transactions,
-      proof = proof,
-      timestamp = System.currentTimeMillis()
-    )
+  def createNewBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = PopulatedBlock(
+    index = this.mostRecentBlocksIndex + 1,
+    transactions = transactions,
+    proof = proof,
+    timestamp = System.currentTimeMillis()
+  )
 }
 
 case class NonEmptyChain(blocks: List[Block]) extends Chain
