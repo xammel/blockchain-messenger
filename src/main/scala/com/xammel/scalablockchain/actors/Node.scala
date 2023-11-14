@@ -1,7 +1,7 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
-import akka.cluster.pubsub.DistributedPubSubMediator.Subscribe
+import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
@@ -37,28 +37,27 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
     case CheckPowSolution(solution) =>
       val node = sender()
       (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {
-        case Success(hash: String) => miner ! miner.tell(Miner.Validate(hash, solution), node)
+        case Success(hash: String) => miner.tell(Miner.Validate(hash, solution), node)
         case Failure(e)            => node ! akka.actor.Status.Failure(e)
       }
-    case AddBlock(proof) =>
+    case AddBlock(proof, transactions, timestamp) =>
       val node = sender()
       (self ? CheckPowSolution(proof)) onComplete {
         case Success(_) =>
-          (broker ? Broker.GetPendingTransactions).mapTo[List[Transaction]] onComplete {
-            case Success(transactions) =>
-              blockchain.tell(
-                Blockchain.AddBlockCommand(transactions, proof, System.currentTimeMillis()),
-                node
-              ) //TODO review this timestamp
-            case Failure(e) => node ! Status.Failure(e)
-          }
-          broker ! Broker.ClearPendingTransactions
+          broker ! Broker.DiffTransaction(transactions)
+          blockchain.tell(
+            Blockchain.AddBlockCommand(transactions, proof, timestamp),
+            node
+          )
+          miner ! ReadyYourself
         case Failure(e) => node ! Status.Failure(e)
+
       }
     case Mine =>
       val node                           = sender()
       val lastHashFuture: Future[String] = (blockchain ? Blockchain.GetLastHash).mapTo[String]
       lastHashFuture onComplete {
+        case Failure(e) => node ! akka.actor.Status.Failure(e)
         case Success(hash) =>
           val proofOfWorkFuture: Future[Long] =
             (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
@@ -66,7 +65,6 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
             case Success(solution) => rewardMiningAndAddBlock(solution)
             case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
           }
-        case Failure(e) => node ! akka.actor.Status.Failure(e)
       }
     case GetTransactions   => broker forward Broker.GetPendingTransactions
     case GetStatus         => blockchain forward Blockchain.GetChain
@@ -75,12 +73,20 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
   }
 
   //TODO can this just return Unit?
-  def rewardMiningAndAddBlock(solution: Long): Unit = {
+  private def rewardMiningAndAddBlock(solution: Long): Unit = {
     //TODO should there be a criteria which only allows blocks to be mined if there
     // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
     // transaction in them
+
+    val node = sender()
+    val time = System.currentTimeMillis()
+
     broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
-    self ! AddBlock(solution)
+    (broker ? Broker.GetPendingTransactions).mapTo[List[Transaction]] onComplete {
+      case Success(transactions) =>
+        mediator ! Publish("newBlock", AddBlock(solution, transactions, time))
+      case Failure(exception) => node ! akka.actor.Status.Failure(exception)
+    }
     miner ! Miner.ReadyYourself
   }
 }
@@ -94,7 +100,8 @@ object Node {
 
   case class CheckPowSolution(solution: Long) extends NodeMessage
 
-  case class AddBlock(proof: Long) extends NodeMessage
+  case class AddBlock(proof: Long, transactions: List[Transaction], timestamp: Long)
+      extends NodeMessage
 
   case object GetTransactions extends NodeMessage
 
