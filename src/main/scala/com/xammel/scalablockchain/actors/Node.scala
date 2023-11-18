@@ -12,33 +12,37 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-
+import com.xammel.scalablockchain.pubsub.PubSub.{
+  subscribeNewBlock,
+  subscribeTransaction,
+  publishNewBlock,
+  publishTransaction
+}
 class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
-  mediator ! Subscribe("newBlock", self)
-  mediator ! Subscribe("transaction", self)
+  mediator ! subscribeNewBlock(self)
+  mediator ! subscribeTransaction(self)
 
-  val broker     = context.actorOf(Broker.props)
-  val miner      = context.actorOf(Miner.props)
-  val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId))
+  private val broker     = context.actorOf(Broker.props)
+  private val miner      = context.actorOf(Miner.props)
+  private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId))
 
   miner ! ReadyYourself
 
-  override def receive: Receive = {
-    case TransactionMessage(transaction, messageNodeId) => {
+  override def receive = {
+    case TransactionMessage(transaction, messageNodeId) if messageNodeId != nodeId =>
       log.info(s"Received transaction message from $messageNodeId")
-      if (messageNodeId != nodeId) {
-        broker ! Broker.AddTransactionToPending(transaction)
-      }
-    }
-    case AddTransaction(transaction) => broker ! Broker.AddTransactionToPending(transaction)
+      broker ! Broker.AddTransactionToPending(transaction)
+    case AddTransaction(transaction) =>
+      broker ! Broker.AddTransactionToPending(transaction)
+      mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
       val node = sender()
       (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {
         case Success(hash: String) => miner.tell(Miner.Validate(hash, solution), node)
-        case Failure(e)            => node ! akka.actor.Status.Failure(e)
+        case Failure(e)            => node ! Status.Failure(e)
       }
     case AddBlock(proof, transactions, timestamp) =>
       val node = sender()
@@ -57,7 +61,7 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
       val node                           = sender()
       val lastHashFuture: Future[String] = (blockchain ? Blockchain.GetLastHash).mapTo[String]
       lastHashFuture onComplete {
-        case Failure(e) => node ! akka.actor.Status.Failure(e)
+        case Failure(e) => node ! Status.Failure(e)
         case Success(hash) =>
           val proofOfWorkFuture: Future[Long] =
             (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
@@ -72,7 +76,6 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
     case GetLastBlockHash  => blockchain forward Blockchain.GetLastHash
   }
 
-  //TODO can this just return Unit?
   private def rewardMiningAndAddBlock(solution: Long): Unit = {
     //TODO should there be a criteria which only allows blocks to be mined if there
     // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
@@ -84,7 +87,7 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
     broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
     (broker ? Broker.GetPendingTransactions).mapTo[List[Transaction]] onComplete {
       case Success(transactions) =>
-        mediator ! Publish("newBlock", AddBlock(solution, transactions, time))
+        mediator ! publishNewBlock(AddBlock(solution, transactions, time))
       case Failure(exception) => node ! akka.actor.Status.Failure(exception)
     }
     miner ! Miner.ReadyYourself
@@ -92,7 +95,7 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 }
 
 object Node {
-  sealed trait NodeMessage
+  sealed trait NodeMessage extends Any
 
   case class AddTransaction(transaction: Transaction) extends NodeMessage
 
@@ -109,6 +112,7 @@ object Node {
 
   case object GetStatus extends NodeMessage
 
+  //TODO these two aren't used yet...
   case object GetLastBlockIndex extends NodeMessage
 
   case object GetLastBlockHash extends NodeMessage

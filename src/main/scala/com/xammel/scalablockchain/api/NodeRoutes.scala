@@ -9,6 +9,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.actors.Node.{AddTransaction, GetTransactions, Mine}
+import com.xammel.scalablockchain.cluster.ClusterManager
 import com.xammel.scalablockchain.json.JsonSupport
 import com.xammel.scalablockchain.models.{Chain, Transaction}
 
@@ -24,9 +25,12 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
-  lazy val statusRoutes: Route = path("status") { get { askStatusFromNode } }
+  lazy val statusRoutes: Route = concat(
+    path(NodeRoutes.status) { get { askStatusFromNode } },
+    path(NodeRoutes.members) { get { askMembersFromClusterManager } }
+  )
 
-  lazy val transactionRoutes: Route = path("transactions") {
+  lazy val transactionRoutes: Route = path(NodeRoutes.transactions) {
     concat(
       get {
         askTransactionsFromNode
@@ -37,12 +41,20 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
     )
   }
 
-  lazy val mineRoutes: Route = path("mine") { get { tellNodeToMine } }
+  lazy val mineRoutes: Route = path(NodeRoutes.mine) { get { tellNodeToMine } }
 
   private def askStatusFromNode: Route = {
     val statusFuture: Future[Chain] = (node ? Node.GetStatus).mapTo[Chain]
     onSuccess(statusFuture) { status =>
       complete(StatusCodes.OK, status)
+    }
+  }
+
+  private def askMembersFromClusterManager: Route = {
+    val activeAddressesFuture: Future[Set[String]] =
+      (clusterManager ? ClusterManager.GetMembers).mapTo[Set[String]]
+    onSuccess(activeAddressesFuture) { addresses =>
+      complete(StatusCodes.OK, addresses)
     }
   }
 
@@ -66,4 +78,12 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
     complete(StatusCodes.OK)
   }
 
+}
+
+object NodeRoutes {
+  // URL paths
+  val status = "status"
+  val members = "members"
+  val transactions = "transactions"
+  val mine = "mine"
 }

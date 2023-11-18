@@ -3,8 +3,6 @@ package com.xammel.scalablockchain.models
 import com.xammel.scalablockchain.crypto.Crypto
 import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
 
-import scala.util.Random
-
 sealed trait Chain {
   val blocks: List[Block]
 
@@ -12,15 +10,10 @@ sealed trait Chain {
   def mostRecentBlocksIndex: Long    = mostRecentBlock.index
   def mostRecentBlocksHash: String   = mostRecentBlock.hash
 
-  def addBlock(transactions: List[Transaction], proof: Long): NonEmptyChain =
-    NonEmptyChain(blocks = this.blocks :+ createNewBlock(transactions, proof))
-
-  def createNewBlock(transactions: List[Transaction], proof: Long): PopulatedBlock = PopulatedBlock(
-    index = this.mostRecentBlocksIndex + 1,
-    transactions = transactions,
-    proof = proof,
-    timestamp = System.currentTimeMillis()
-  )
+  def addBlock(transactions: List[Transaction], proof: Long, timestamp: Long): NonEmptyChain = {
+    val newBlock = PopulatedBlock(this.mostRecentBlocksIndex + 1, transactions, proof, timestamp)
+    NonEmptyChain(blocks = this.blocks :+ newBlock)
+  }
 }
 
 case class NonEmptyChain(blocks: List[Block]) extends Chain
