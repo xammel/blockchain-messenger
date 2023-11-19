@@ -1,23 +1,19 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
-import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
+import akka.cluster.Cluster
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
 import com.xammel.scalablockchain.actors.Node._
+import com.xammel.scalablockchain.cluster.ClusterListener
 import com.xammel.scalablockchain.models.{EmptyChain, Transaction}
+import com.xammel.scalablockchain.pubsub.PubSub._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-import com.xammel.scalablockchain.pubsub.PubSub.{
-  subscribeNewBlock,
-  subscribeTransaction,
-  publishNewBlock,
-  publishTransaction
-}
 class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 
   implicit lazy val timeout = Timeout(5.seconds)
@@ -25,9 +21,11 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
 
+  val cluster            = Cluster(context.system)
   private val broker     = context.actorOf(Broker.props)
   private val miner      = context.actorOf(Miner.props)
   private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId))
+  private val listener   = context.actorOf(ClusterListener.props(nodeId, cluster))
 
   miner ! ReadyYourself
 

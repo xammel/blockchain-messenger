@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Route
 import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import com.xammel.scalablockchain.actors.Node
-import com.xammel.scalablockchain.cluster.ClusterManager
+//import com.xammel.scalablockchain.cluster.ClusterManager
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
@@ -25,7 +25,7 @@ object Server extends App with NodeRoutes {
 
   private lazy val routes: Route = statusRoutes ~ transactionRoutes ~ mineRoutes
 
-  val clusterManager: ActorRef = system.actorOf(ClusterManager.props(nodeId), "clusterManager")
+//  val clusterManager: ActorRef = system.actorOf(ClusterManager.props(nodeId), "clusterManager")
   val mediator: ActorRef = DistributedPubSub(system).mediator
   val node: ActorRef = system.actorOf(Node.props(nodeId, mediator), "node")
 
