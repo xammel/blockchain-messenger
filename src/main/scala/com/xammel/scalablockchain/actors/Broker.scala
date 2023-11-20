@@ -2,10 +2,11 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
-import com.xammel.scalablockchain.actors.Broker._
-import com.xammel.scalablockchain.models.Transaction
+import com.xammel.scalablockchain.models.{ActorName, Transaction}
 
 class Broker extends Actor with ActorLogging {
+
+  import Broker._
 
   //TODO review default impl
   //TODO does this need to be mutable?
@@ -24,7 +25,7 @@ class Broker extends Actor with ActorLogging {
   }
 }
 
-object Broker {
+object Broker extends ActorName {
   sealed trait BrokerMessage
   case class AddTransactionToPending(transaction: Transaction) extends BrokerMessage
   case object GetPendingTransactions                           extends BrokerMessage

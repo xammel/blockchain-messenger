@@ -5,9 +5,8 @@ import akka.cluster.Cluster
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
-import com.xammel.scalablockchain.actors.Node._
 import com.xammel.scalablockchain.cluster.ClusterListener
-import com.xammel.scalablockchain.models.{EmptyChain, Transaction}
+import com.xammel.scalablockchain.models.{ActorName, EmptyChain, Transaction}
 import com.xammel.scalablockchain.pubsub.PubSub._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,16 +15,18 @@ import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 
+  import Node._
+
   implicit lazy val timeout = Timeout(5.seconds)
 
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
 
   val cluster            = Cluster(context.system)
-  private val broker     = context.actorOf(Broker.props)
-  private val miner      = context.actorOf(Miner.props)
-  private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId))
-  private val listener   = context.actorOf(ClusterListener.props(nodeId, cluster))
+  private val broker     = context.actorOf(Broker.props, Broker.actorName)
+  private val miner      = context.actorOf(Miner.props, Miner.actorName)
+  private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
+  context.actorOf(ClusterListener.props(nodeId, cluster), ClusterListener.actorName)
 
   miner ! ReadyYourself
 
@@ -92,7 +93,7 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
   }
 }
 
-object Node {
+object Node extends ActorName {
   sealed trait NodeMessage extends Any
 
   case class AddTransaction(transaction: Transaction) extends NodeMessage

@@ -3,6 +3,7 @@ package com.xammel.scalablockchain.cluster
 import akka.actor.{Actor, ActorLogging, Props}
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import com.xammel.scalablockchain.models.ActorName
 
 class ClusterListener(nodeId: String, cluster: Cluster) extends Actor with ActorLogging {
 
@@ -25,6 +26,6 @@ class ClusterListener(nodeId: String, cluster: Cluster) extends Actor with Actor
   }
 }
 
-object ClusterListener {
+object ClusterListener extends ActorName {
   def props(nodeId: String, cluster: Cluster) = Props(new ClusterListener(nodeId, cluster))
 }

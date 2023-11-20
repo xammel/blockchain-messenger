@@ -27,7 +27,7 @@ object Server extends App with NodeRoutes {
 
 //  val clusterManager: ActorRef = system.actorOf(ClusterManager.props(nodeId), "clusterManager")
   val mediator: ActorRef = DistributedPubSub(system).mediator
-  val node: ActorRef = system.actorOf(Node.props(nodeId, mediator), "node")
+  val node: ActorRef = system.actorOf(Node.props(nodeId, mediator), "node")//Node.actorName)
 
 
   Http().bindAndHandle(routes, address, port)

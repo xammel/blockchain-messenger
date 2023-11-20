@@ -2,12 +2,14 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.Status.{Failure, Success}
 import akka.actor.{Actor, ActorLogging, Props}
-import com.xammel.scalablockchain.actors.Miner._
 import com.xammel.scalablockchain.exceptions.{InvalidProofException, MinerBusyException}
+import com.xammel.scalablockchain.models.ActorName
 import com.xammel.scalablockchain.proof.ProofOfWork._
 
 import scala.concurrent.Future
 class Miner extends Actor with ActorLogging {
+
+  import Miner._
 
   import context._
 
@@ -49,7 +51,7 @@ class Miner extends Actor with ActorLogging {
   }
 }
 
-object Miner {
+object Miner extends ActorName {
   sealed trait MinerMessage
   case class Validate(hash: String, proof: Long) extends MinerMessage
   case class Mine(hash: String)                  extends MinerMessage
