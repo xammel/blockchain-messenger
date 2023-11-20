@@ -10,7 +10,7 @@ class Broker extends Actor with ActorLogging {
 
   //TODO review default impl
   //TODO does this need to be mutable?
-  var pending: List[Transaction] = Nil
+  private var pending: List[Transaction] = Nil
 
   override def receive: Receive = {
     case AddTransactionToPending(transaction) =>

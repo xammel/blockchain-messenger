@@ -1,11 +1,9 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
-import akka.cluster.Cluster
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
-import com.xammel.scalablockchain.cluster.ClusterListener
 import com.xammel.scalablockchain.models.{ActorName, EmptyChain, Transaction}
 import com.xammel.scalablockchain.pubsub.PubSub._
 
@@ -22,9 +20,10 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
 
-  private val broker     = context.actorOf(Broker.props, Broker.actorName)
-  private val miner      = context.actorOf(Miner.props, Miner.actorName)
-  private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
+  private val broker = context.actorOf(Broker.props, Broker.actorName)
+  private val miner  = context.actorOf(Miner.props, Miner.actorName)
+  private val blockchain =
+    context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
 
   miner ! ReadyYourself
 

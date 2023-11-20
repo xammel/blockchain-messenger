@@ -11,7 +11,7 @@ import Blockchain._
 
   override def persistenceId: String = s"chainer-$nodeId"
 
-  var state: Chain = chain
+  private var state: Chain = chain
 
   override def receiveRecover: Receive = {
     case RecoveryCompleted      => log.info("Recovery completed")

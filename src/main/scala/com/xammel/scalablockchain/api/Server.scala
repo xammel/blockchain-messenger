@@ -10,7 +10,6 @@ import akka.stream.ActorMaterializer
 import com.typesafe.config.{Config, ConfigFactory}
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.cluster.ClusterListener
-//import com.xammel.scalablockchain.cluster.ClusterManager
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
