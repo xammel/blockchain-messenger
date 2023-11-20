@@ -22,11 +22,9 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
 
-  val cluster            = Cluster(context.system)
   private val broker     = context.actorOf(Broker.props, Broker.actorName)
   private val miner      = context.actorOf(Miner.props, Miner.actorName)
   private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
-  context.actorOf(ClusterListener.props(nodeId, cluster), ClusterListener.actorName)
 
   miner ! ReadyYourself
 

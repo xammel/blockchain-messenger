@@ -21,7 +21,7 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
   implicit def system: ActorSystem
 
   def node: ActorRef
-//  def clusterManager: ActorRef
+  def clusterListener: ActorRef
 
   implicit lazy val timeout = Timeout(5.seconds)
 
