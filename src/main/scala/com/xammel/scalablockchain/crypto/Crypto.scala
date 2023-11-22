@@ -1,7 +1,9 @@
 package com.xammel.scalablockchain.crypto
 
 import java.nio.charset.StandardCharsets
-import java.security.MessageDigest
+import java.security._
+import java.util.Base64
+import javax.crypto.Cipher
 
 object Crypto {
   def sha256Hash(value: String) = {
@@ -11,5 +13,51 @@ object Crypto {
     val charArray: Array[String]  = encodedBytes.map("%02x".format(_))
     charArray.mkString
   }
+
+  def base64Encode(bytes: Array[Byte]): String = {
+    Base64.getEncoder.encodeToString(bytes)
+  }
+
+  def base64Decode(string: String): Array[Byte] = {
+    Base64.getDecoder.decode(string)
+  }
+
+  def encrypt(publicKey: PublicKey)(message: String) = {
+    val cipher: Cipher = Cipher.getInstance("RSA")
+    cipher.init(Cipher.ENCRYPT_MODE, publicKey)
+    val data: Array[Byte] = cipher.doFinal(message.getBytes)
+    base64Encode(data)
+  }
+
+  def decrypt(privateKey: PrivateKey)(encryptedMessage: String) = {
+    val data           = base64Decode(encryptedMessage)
+    val cipher: Cipher = Cipher.getInstance("RSA")
+    cipher.init(Cipher.DECRYPT_MODE, privateKey)
+    new String(cipher.doFinal(data))
+  }
+
+  def generateKeyPair(seed: String) = {
+    val ss  = new SecureRandom(seed.getBytes())
+    val gen = KeyPairGenerator.getInstance("RSA")
+    gen.initialize(1024, ss)
+
+    gen.generateKeyPair
+  }
+
+  val nodeId                                            = "node0"
+  val keyPair                                           = generateKeyPair(nodeId)
+  val Seq(privateKey: PrivateKey, publicKey: PublicKey) = Seq(keyPair.getPrivate, keyPair.getPublic)
+
+  val message          = "hi there my name is mindy"
+  val encryptedMessage = encrypt(publicKey)(message)
+  val decryptedMessage = decrypt(privateKey)(encryptedMessage)
+
+  val keyPair2 = generateKeyPair(nodeId)
+  val Seq(privateKey2: PrivateKey, publicKey2: PublicKey) =
+    Seq(keyPair2.getPrivate, keyPair2.getPublic)
+
+  //val decryptedMessage2 = decrypt(privateKey2)(encryptedMessage)
+  val encrypted2 = encrypt(publicKey2)(message)
+  val decrypted2 = decrypt(privateKey2)(encrypted2)
 
 }

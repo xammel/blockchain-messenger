@@ -4,6 +4,7 @@ import akka.actor.{ActorRef, Props, Status}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
+import com.xammel.scalablockchain.crypto.Crypto
 import com.xammel.scalablockchain.models.{ActorName, EmptyChain, ScalaBlockchainActor, Transaction}
 import com.xammel.scalablockchain.pubsub.PubSub._
 
@@ -19,6 +20,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
+  mediator ! subscribeGetPublicKey(self)
 
   private val broker = context.actorOf(Broker.props, Broker.actorName)
   private val miner  = context.actorOf(Miner.props, Miner.actorName)
@@ -28,6 +30,12 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
   miner ! ReadyYourself
 
   override def handleMessages: ReceiveType[NodeMessage] = {
+    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId == nodeId => {
+      log.info(s" $nodeId , inside recipient receive fn")
+      val keyPair = Crypto.generateKeyPair(nodeId)
+      Crypto.base64Encode(keyPair.getPublic.getEncoded)
+    }
+    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId != nodeId => log.info(s"$recipientNodeId did not match $nodeId")
     case TransactionMessage(transaction, messageNodeId) if messageNodeId != nodeId =>
       log.info(s"Received transaction message from $messageNodeId")
       broker ! Broker.AddTransactionToPending(transaction)
@@ -68,7 +76,16 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
           }
       }
     case GetTransactions => broker forward Broker.GetPendingTransactions
-    case GetStatus       => blockchain forward Blockchain.GetChain
+    case GetStatus       => {
+      //TODO REVERT
+      (mediator ? publishGetPublicKey(GetRecipientPublicKey("node1"))).mapTo[String] onComplete {
+        case Success(v) =>
+          log.info("\n\n WOOHOO \n\n")
+          log.info(v)
+        case Failure(e) => Status.Failure(e)
+      }
+      blockchain forward Blockchain.GetChain
+    }
     //TODO don't think these two are used
     case GetLastBlockIndex => blockchain forward Blockchain.GetLastIndex
     case GetLastBlockHash  => blockchain forward Blockchain.GetLastHash
@@ -114,6 +131,8 @@ object Node extends ActorName {
   case object GetLastBlockIndex extends NodeMessage
 
   case object GetLastBlockHash extends NodeMessage
+
+  case class GetRecipientPublicKey(recipientNodeId: String) extends NodeMessage
 
   def props(nodeId: String, mediator: ActorRef): Props = Props(new Node(nodeId, mediator))
 
