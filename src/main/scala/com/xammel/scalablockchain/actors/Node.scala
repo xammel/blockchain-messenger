@@ -1,17 +1,17 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Status}
+import akka.actor.{ActorRef, Props, Status}
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
-import com.xammel.scalablockchain.models.{ActorName, EmptyChain, Transaction}
+import com.xammel.scalablockchain.models.{ActorName, EmptyChain, ScalaBlockchainActor, Transaction}
 import com.xammel.scalablockchain.pubsub.PubSub._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
-class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
+class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node.NodeMessage] {
 
   import Node._
 
@@ -27,10 +27,11 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 
   miner ! ReadyYourself
 
-  override def receive = {
+  override def handleMessages: ReceiveType[NodeMessage] = {
     case TransactionMessage(transaction, messageNodeId) if messageNodeId != nodeId =>
       log.info(s"Received transaction message from $messageNodeId")
       broker ! Broker.AddTransactionToPending(transaction)
+    case TransactionMessage(_, messageNodeId) if messageNodeId == nodeId => // ignore
     case AddTransaction(transaction) =>
       broker ! Broker.AddTransactionToPending(transaction)
       mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
@@ -51,8 +52,8 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
           )
           miner ! ReadyYourself
         case Failure(e) => node ! Status.Failure(e)
-
       }
+
     case Mine =>
       val node                           = sender()
       val lastHashFuture: Future[String] = (blockchain ? Blockchain.GetLastHash).mapTo[String]
@@ -66,8 +67,9 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
             case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
           }
       }
-    case GetTransactions   => broker forward Broker.GetPendingTransactions
-    case GetStatus         => blockchain forward Blockchain.GetChain
+    case GetTransactions => broker forward Broker.GetPendingTransactions
+    case GetStatus       => blockchain forward Blockchain.GetChain
+    //TODO don't think these two are used
     case GetLastBlockIndex => blockchain forward Blockchain.GetLastIndex
     case GetLastBlockHash  => blockchain forward Blockchain.GetLastHash
   }
@@ -91,7 +93,7 @@ class Node(nodeId: String, mediator: ActorRef) extends Actor with ActorLogging {
 }
 
 object Node extends ActorName {
-  sealed trait NodeMessage extends Any
+  sealed trait NodeMessage
 
   case class AddTransaction(transaction: Transaction) extends NodeMessage
 

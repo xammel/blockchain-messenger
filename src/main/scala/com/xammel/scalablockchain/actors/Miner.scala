@@ -1,23 +1,22 @@
 package com.xammel.scalablockchain.actors
 
+import akka.actor.Props
 import akka.actor.Status.{Failure, Success}
-import akka.actor.{Actor, ActorLogging, Props}
 import com.xammel.scalablockchain.exceptions.{InvalidProofException, MinerBusyException}
-import com.xammel.scalablockchain.models.ActorName
+import com.xammel.scalablockchain.models.{ActorName, ScalaBlockchainActor}
 import com.xammel.scalablockchain.proof.ProofOfWork._
 
 import scala.concurrent.Future
-class Miner extends Actor with ActorLogging {
+class Miner extends ScalaBlockchainActor[Miner.MinerMessage] {
 
   import Miner._
-
   import context._
 
-  override def receive: Receive = {
-    case ReadyYourself => become(ready)
+  override def handleMessages: ReceiveType[MinerMessage] = { case ReadyYourself =>
+    become(ready)
   }
 
-  def ready: Receive = validate orElse {
+  private def ready: Receive = validate orElse {
     case Mine(hash) =>
       log.info(s"Mining hash $hash...")
       val proof: Future[Long] = Future {
@@ -30,7 +29,7 @@ class Miner extends Actor with ActorLogging {
       sender() ! Success("OK")
   }
 
-  def validate: Receive = { case Validate(hash, proof) =>
+  private def validate: Receive = { case Validate(hash, proof) =>
     log.info(s"Validating proof $proof")
     if (isValidProof(hash, proof)) {
       log.info("Proof is valid!")
@@ -41,7 +40,7 @@ class Miner extends Actor with ActorLogging {
     }
   }
 
-  def busy: Receive = validate orElse {
+  private def busy: Receive = validate orElse {
     case Mine(_) =>
       log.info("I'm already mining")
       sender ! Failure(MinerBusyException)

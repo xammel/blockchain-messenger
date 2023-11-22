@@ -1,10 +1,9 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{Actor, ActorLogging, Props}
-import akka.cluster.pubsub.DistributedPubSubMediator.{Subscribe, SubscribeAck}
-import com.xammel.scalablockchain.models.{ActorName, Transaction}
+import akka.actor.Props
+import com.xammel.scalablockchain.models.{ActorName, ScalaBlockchainActor, Transaction}
 
-class Broker extends Actor with ActorLogging {
+class Broker extends ScalaBlockchainActor[Broker.BrokerMessage] {
 
   import Broker._
 
@@ -12,7 +11,7 @@ class Broker extends Actor with ActorLogging {
   //TODO does this need to be mutable?
   private var pending: List[Transaction] = Nil
 
-  override def receive: Receive = {
+  override def handleMessages: ReceiveType[BrokerMessage] = {
     case AddTransactionToPending(transaction) =>
       pending = pending :+ transaction
       log.info(s"Added transaction ${transaction.transactionId} to pending transactions")
@@ -21,7 +20,7 @@ class Broker extends Actor with ActorLogging {
       sender() ! pending
     case DiffTransaction(externalTransactions) => pending = pending diff externalTransactions
     //TODO unsure on the use of this
-    case SubscribeAck(Subscribe("transaction", None, `self`)) => log.info("subscribing")
+    //    case SubscribeAck(Subscribe("transaction", None, `self`)) => log.info("subscribing")
   }
 }
 
