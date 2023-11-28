@@ -33,9 +33,10 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case GetRecipientPublicKey(recipientNodeId) if recipientNodeId == nodeId => {
       log.info(s" $nodeId , inside recipient receive fn")
       val keyPair = Crypto.generateKeyPair(nodeId)
-      Crypto.base64Encode(keyPair.getPublic.getEncoded)
+      sender() ! Crypto.base64Encode(keyPair.getPublic.getEncoded)
     }
-    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId != nodeId => log.info(s"$recipientNodeId did not match $nodeId")
+    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId != nodeId =>
+      log.info(s"$recipientNodeId did not match $nodeId")
     case TransactionMessage(transaction, messageNodeId) if messageNodeId != nodeId =>
       log.info(s"Received transaction message from $messageNodeId")
       broker ! Broker.AddTransactionToPending(transaction)
@@ -76,7 +77,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
           }
       }
     case GetTransactions => broker forward Broker.GetPendingTransactions
-    case GetStatus       => {
+    case GetStatus => {
       //TODO REVERT
       (mediator ? publishGetPublicKey(GetRecipientPublicKey("node1"))).mapTo[String] onComplete {
         case Success(v) =>
