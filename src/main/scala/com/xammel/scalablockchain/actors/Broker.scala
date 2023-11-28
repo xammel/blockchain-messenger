@@ -1,7 +1,7 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.Props
-import com.xammel.scalablockchain.models.{ActorName, ScalaBlockchainActor, Transaction}
+import com.xammel.scalablockchain.models.{ActorName, Message, ScalaBlockchainActor, Transaction}
 
 class Broker extends ScalaBlockchainActor[Broker.BrokerMessage] {
 
@@ -28,7 +28,7 @@ object Broker extends ActorName {
   sealed trait BrokerMessage
   case class AddTransactionToPending(transaction: Transaction) extends BrokerMessage
   case object GetPendingTransactions                           extends BrokerMessage
-  case class DiffTransaction(transactions: List[Transaction])  extends BrokerMessage
+  case class DiffTransaction(transactions: List[Message])  extends BrokerMessage
 
   val props: Props = Props(new Broker)
 }

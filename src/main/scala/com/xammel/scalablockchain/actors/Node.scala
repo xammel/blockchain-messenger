@@ -5,13 +5,23 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
 import com.xammel.scalablockchain.crypto.Crypto
-import com.xammel.scalablockchain.models.{ActorName, EmptyChain, ScalaBlockchainActor, Transaction}
+import com.xammel.scalablockchain.models._
 import com.xammel.scalablockchain.pubsub.PubSub._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
+
+/*
+Plan:
+- Blockchain-based messaging service
+- To be a participant in messaging, you must be a node hosting the blockchain
+- Sending a message costs money, mining a block earns money
+- Each node has a private and public key. Messages stored on the blockchain are encrypted with the recipient's public key.
+  It can be decrypted with the recipient's private key.
+- Voila
+ */
 class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node.NodeMessage] {
 
   import Node._
@@ -69,8 +79,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       lastHashFuture onComplete {
         case Failure(e) => node ! Status.Failure(e)
         case Success(hash) =>
-          val proofOfWorkFuture: Future[Long] =
-            (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
+          val proofOfWorkFuture: Future[Long] = (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
           proofOfWorkFuture onComplete {
             case Success(solution) => rewardMiningAndAddBlock(solution)
             case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
@@ -101,7 +110,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     val time = System.currentTimeMillis()
 
     broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
-    (broker ? Broker.GetPendingTransactions).mapTo[List[Transaction]] onComplete {
+    (broker ? Broker.GetPendingTransactions).mapTo[List[Message]] onComplete {
       case Success(transactions) =>
         mediator ! publishNewBlock(AddBlock(solution, transactions, time))
       case Failure(exception) => node ! akka.actor.Status.Failure(exception)
@@ -113,14 +122,13 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 object Node extends ActorName {
   sealed trait NodeMessage
 
-  case class AddTransaction(transaction: Transaction) extends NodeMessage
+  case class AddTransaction(transaction: Message) extends NodeMessage
 
-  case class TransactionMessage(transaction: Transaction, nodeId: String) extends NodeMessage
+  case class TransactionMessage(transaction: Message, nodeId: String) extends NodeMessage
 
   case class CheckPowSolution(solution: Long) extends NodeMessage
 
-  case class AddBlock(proof: Long, transactions: List[Transaction], timestamp: Long)
-      extends NodeMessage
+  case class AddBlock(proof: Long, transactions: List[Message], timestamp: Long) extends NodeMessage
 
   case object GetTransactions extends NodeMessage
 
@@ -138,5 +146,5 @@ object Node extends ActorName {
   def props(nodeId: String, mediator: ActorRef): Props = Props(new Node(nodeId, mediator))
 
   //TODO edit amount to be configurable
-  def createMiningRewardTransaction(nodeId: String) = Transaction("theBank", nodeId, 100)
+  def createMiningRewardTransaction(nodeId: String): Transaction = MiningReward("theBank", nodeId)
 }

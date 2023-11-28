@@ -9,9 +9,8 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.actors.Node.{AddTransaction, GetTransactions, Mine}
-//import com.xammel.scalablockchain.cluster.ClusterManager
 import com.xammel.scalablockchain.json.JsonSupport
-import com.xammel.scalablockchain.models.{Chain, Transaction}
+import com.xammel.scalablockchain.models.{Chain, Message}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -25,10 +24,8 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
-  lazy val statusRoutes: Route = concat(
-    path(NodeRoutes.status) { get { askStatusFromNode } }
-//    path(NodeRoutes.members) { get { askMembersFromClusterManager } }
-  )
+  lazy val statusRoutes: Route = path(NodeRoutes.status) { get { askStatusFromNode } }
+
 
   lazy val transactionRoutes: Route = path(NodeRoutes.transactions) {
     concat(
@@ -50,24 +47,16 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
     }
   }
 
-//  private def askMembersFromClusterManager: Route = {
-//    val activeAddressesFuture: Future[Set[String]] =
-//      (clusterManager ? ClusterManager.GetMembers).mapTo[Set[String]]
-//    onSuccess(activeAddressesFuture) { addresses =>
-//      complete(StatusCodes.OK, addresses)
-//    }
-//  }
-
   private def askTransactionsFromNode: Route = {
-    val transactionsRetrieved: Future[List[Transaction]] =
-      (node ? GetTransactions).mapTo[List[Transaction]]
+    val transactionsRetrieved: Future[List[Message]] =
+      (node ? GetTransactions).mapTo[List[Message]]
     onSuccess(transactionsRetrieved) { transactions =>
       complete(transactions.toList)
     }
   }
 
   private def tellNodeToAddTransaction: Route = {
-    entity(as[Transaction]) { transaction =>
+    entity(as[Message]) { transaction =>
       node ! AddTransaction(transaction)
       complete(StatusCodes.OK)
     }
@@ -83,7 +72,6 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 object NodeRoutes {
   // URL paths
   val status = "status"
-  val members = "members"
   val transactions = "transactions"
   val mine = "mine"
 }
