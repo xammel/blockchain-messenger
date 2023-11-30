@@ -26,9 +26,15 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
   (mediator ? publishGetPublicKey(GetRecipientPublicKey("node1")))
    */
   override def handleMessages: ReceiveType[KeeperOfKeys.KeeperMessage] = {
-    case GetPublicKey(message: Message)                                           => mediator ? publishGetPublicKey(GetRecipientPublicKey(message))
+    case GetPublicKey(message: Message) => {
+      //TODO revert
+      log.info(s"publishing to ${message.beneficiary} - $nodeId")
+      mediator ? publishGetPublicKey(GetRecipientPublicKey(message))
+    }
     case GetRecipientPublicKey(message: Message) if message.beneficiary != nodeId => //ignore
     case GetRecipientPublicKey(message: Message) if message.beneficiary == nodeId =>
+      //TODO revert
+      log.info(s"inside the sending func to ${message.beneficiary} - $nodeId")
       sender() ! Crypto.base64Encode(keyPair.getPublic.getEncoded)
   }
 }
