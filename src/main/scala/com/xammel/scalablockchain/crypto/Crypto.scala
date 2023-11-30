@@ -36,23 +36,22 @@ object Crypto {
     new String(cipher.doFinal(data))
   }
 
-  def generateKeyPair(seed: String) = {
-    val ss  = new SecureRandom(seed.getBytes())
+  def generateKeyPair = {
     val gen = KeyPairGenerator.getInstance("RSA")
-    gen.initialize(1024, ss)
+    gen.initialize(1024, new SecureRandom())
 
     gen.generateKeyPair
   }
 
   val nodeId                                            = "node0"
-  val keyPair                                           = generateKeyPair(nodeId)
+  val keyPair                                           = generateKeyPair
   val Seq(privateKey: PrivateKey, publicKey: PublicKey) = Seq(keyPair.getPrivate, keyPair.getPublic)
 
   val message          = "hi there my name is mindy"
   val encryptedMessage = encrypt(publicKey)(message)
   val decryptedMessage = decrypt(privateKey)(encryptedMessage)
 
-  val keyPair2 = generateKeyPair(nodeId)
+  val keyPair2 = generateKeyPair
   val Seq(privateKey2: PrivateKey, publicKey2: PublicKey) =
     Seq(keyPair2.getPrivate, keyPair2.getPublic)
 

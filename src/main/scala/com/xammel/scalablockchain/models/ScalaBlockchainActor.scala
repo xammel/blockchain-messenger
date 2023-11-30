@@ -1,14 +1,16 @@
 package com.xammel.scalablockchain.models
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Status}
-import akka.pattern.ask
+import akka.actor.{Actor, ActorLogging, Status}
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.util.{Failure, Success}
 
 abstract class ScalaBlockchainActor[T: Manifest] extends Actor with ActorLogging {
+
+  implicit lazy val timeout = Timeout(5.seconds)
 
   type ReceiveType[T] = PartialFunction[T, Unit]
   def handleMessages: ReceiveType[T]

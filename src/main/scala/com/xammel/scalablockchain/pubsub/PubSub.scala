@@ -2,7 +2,7 @@ package com.xammel.scalablockchain.pubsub
 
 import akka.actor.ActorRef
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
-import com.xammel.scalablockchain.actors.Node
+import com.xammel.scalablockchain.actors.{KeeperOfKeys, Node}
 import com.xammel.scalablockchain.actors.Node.GetRecipientPublicKey
 
 object PubSub {
@@ -18,6 +18,6 @@ object PubSub {
     Publish(transaction, transactionMessage)
 
   def subscribeGetPublicKey(actor: ActorRef) = Subscribe(getPublicKey, actor)
-  def publishGetPublicKey(get: Node.GetRecipientPublicKey)                    = Publish(getPublicKey, get)
+  def publishGetPublicKey(get: KeeperOfKeys.GetRecipientPublicKey)                    = Publish(getPublicKey, get)
 
 }

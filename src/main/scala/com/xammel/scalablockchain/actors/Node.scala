@@ -26,28 +26,30 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 
   import Node._
 
-  implicit lazy val timeout = Timeout(5.seconds)
-
-  mediator ! subscribeNewBlock(self)
-  mediator ! subscribeTransaction(self)
-  mediator ! subscribeGetPublicKey(self)
-
   private val broker = context.actorOf(Broker.props, Broker.actorName)
   private val miner  = context.actorOf(Miner.props, Miner.actorName)
   private val blockchain =
     context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
+  private val keeper = context.actorOf(KeeperOfKeys.props(nodeId, mediator), KeeperOfKeys.actorName)
+
+  mediator ! subscribeNewBlock(self)
+  mediator ! subscribeTransaction(self)
+  mediator ! subscribeGetPublicKey(keeper)
 
   miner ! ReadyYourself
 
   override def handleMessages: ReceiveType[NodeMessage] = {
-    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId == nodeId => {
-      log.info(s" $nodeId , inside recipient receive fn")
-      val keyPair = Crypto.generateKeyPair(nodeId)
-      sender() ! Crypto.base64Encode(keyPair.getPublic.getEncoded)
-    }
-    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId != nodeId => //ignore
     case TransactionMessage(transaction, messageNodeId) =>
       log.info(s"Received transaction message from $messageNodeId")
+      /*
+      plan:
+      1. transaction is a reward or a message. If reward just add to broker pending txns
+      2. if message...
+      3. get public key for the recipient
+      4. encrypt message payload with the public key
+      5. send the new message, with new payload to the broker to add
+       */
+      (keeper ? KeeperOfKeys.GetPublicKey).mapTo[String] givenSuccess { s => log.info(s"got ya $s") }
       broker ! Broker.AddTransactionToPending(transaction)
     case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
