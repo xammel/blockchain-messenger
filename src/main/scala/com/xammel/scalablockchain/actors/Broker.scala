@@ -28,7 +28,7 @@ object Broker extends ActorName {
   sealed trait BrokerMessage
   case class AddTransactionToPending(transaction: Transaction) extends BrokerMessage
   case object GetPendingTransactions                           extends BrokerMessage
-  case class DiffTransaction(transactions: List[Message])  extends BrokerMessage
+  case class DiffTransaction(transactions: List[Transaction])  extends BrokerMessage
 
   val props: Props = Props(new Broker)
 }

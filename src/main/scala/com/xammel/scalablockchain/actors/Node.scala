@@ -45,15 +45,11 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       val keyPair = Crypto.generateKeyPair(nodeId)
       sender() ! Crypto.base64Encode(keyPair.getPublic.getEncoded)
     }
-    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId != nodeId =>
-      log.info(s"$recipientNodeId did not match $nodeId")
-    case TransactionMessage(transaction, messageNodeId) if messageNodeId != nodeId =>
+    case GetRecipientPublicKey(recipientNodeId) if recipientNodeId != nodeId => //ignore
+    case TransactionMessage(transaction, messageNodeId) =>
       log.info(s"Received transaction message from $messageNodeId")
       broker ! Broker.AddTransactionToPending(transaction)
-    case TransactionMessage(_, messageNodeId) if messageNodeId == nodeId => // ignore
-    case AddTransaction(transaction) =>
-      broker ! Broker.AddTransactionToPending(transaction)
-      mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
+    case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
       val node = sender()
       (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {
@@ -61,41 +57,23 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
         case Failure(e)            => node ! Status.Failure(e)
       }
     case AddBlock(proof, transactions, timestamp) =>
-      val node = sender()
-      (self ? CheckPowSolution(proof)) onComplete {
-        case Success(_) =>
-          broker ! Broker.DiffTransaction(transactions)
-          blockchain.tell(
-            Blockchain.AddBlockCommand(transactions, proof, timestamp),
-            node
-          )
-          miner ! ReadyYourself
-        case Failure(e) => node ! Status.Failure(e)
+      (self ? CheckPowSolution(proof)) givenSuccess { _ =>
+        broker ! Broker.DiffTransaction(transactions)
+        blockchain.tell(
+          Blockchain.AddBlockCommand(transactions, proof, timestamp),
+          sender
+        )
+        miner ! ReadyYourself
       }
 
     case Mine =>
-      val node                           = sender()
       val lastHashFuture: Future[String] = (blockchain ? Blockchain.GetLastHash).mapTo[String]
-      lastHashFuture onComplete {
-        case Failure(e) => node ! Status.Failure(e)
-        case Success(hash) =>
-          val proofOfWorkFuture: Future[Long] = (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
-          proofOfWorkFuture onComplete {
-            case Success(solution) => rewardMiningAndAddBlock(solution)
-            case Failure(e)        => log.error(s"Error finding PoW solution: ${e.getMessage}")
-          }
+      lastHashFuture givenSuccess { hash: String =>
+        val proofOfWorkFuture: Future[Long] = (miner ? Miner.Mine(hash)).mapTo[Future[Long]].flatten
+        proofOfWorkFuture givenSuccess { solution => rewardMiningAndAddBlock(solution) }
       }
     case GetTransactions => broker forward Broker.GetPendingTransactions
-    case GetStatus => {
-      //TODO REVERT
-      (mediator ? publishGetPublicKey(GetRecipientPublicKey("node1"))).mapTo[String] onComplete {
-        case Success(v) =>
-          log.info("\n\n WOOHOO \n\n")
-          log.info(v)
-        case Failure(e) => Status.Failure(e)
-      }
-      blockchain forward Blockchain.GetChain
-    }
+    case GetStatus       => blockchain forward Blockchain.GetChain
     //TODO don't think these two are used
     case GetLastBlockIndex => blockchain forward Blockchain.GetLastIndex
     case GetLastBlockHash  => blockchain forward Blockchain.GetLastHash
@@ -106,14 +84,12 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
     // transaction in them
 
-    val node = sender()
     val time = System.currentTimeMillis()
 
     broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
-    (broker ? Broker.GetPendingTransactions).mapTo[List[Message]] onComplete {
-      case Success(transactions) =>
-        mediator ! publishNewBlock(AddBlock(solution, transactions, time))
-      case Failure(exception) => node ! akka.actor.Status.Failure(exception)
+    (broker ? Broker.GetPendingTransactions).mapTo[List[Transaction]] onComplete {
+      case Success(transactions) => mediator ! publishNewBlock(AddBlock(solution, transactions, time))
+      case Failure(exception)    => sender ! Failure(exception)
     }
     miner ! Miner.ReadyYourself
   }
@@ -128,7 +104,7 @@ object Node extends ActorName {
 
   case class CheckPowSolution(solution: Long) extends NodeMessage
 
-  case class AddBlock(proof: Long, transactions: List[Message], timestamp: Long) extends NodeMessage
+  case class AddBlock(proof: Long, transactions: List[Transaction], timestamp: Long) extends NodeMessage
 
   case object GetTransactions extends NodeMessage
 

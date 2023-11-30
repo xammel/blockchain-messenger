@@ -2,7 +2,7 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
-import com.xammel.scalablockchain.models.{ActorName, Chain, Message}
+import com.xammel.scalablockchain.models.{ActorName, Chain, Message, Transaction}
 
 //TODO if facing long actor recovery times, could implement snapshotting.
 class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with ActorLogging {
@@ -38,7 +38,7 @@ object Blockchain extends ActorName {
 
   sealed trait BlockchainCommand
 
-  case class AddBlockCommand(transactions: List[Message], proof: Long, timestamp: Long)
+  case class AddBlockCommand(transactions: List[Transaction], proof: Long, timestamp: Long)
       extends BlockchainCommand
 
   case object GetChain extends BlockchainCommand

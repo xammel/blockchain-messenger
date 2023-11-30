@@ -10,7 +10,7 @@ sealed trait Chain {
   def mostRecentBlocksIndex: Long    = mostRecentBlock.index
   def mostRecentBlocksHash: String   = mostRecentBlock.hash
 
-  def addBlock(transactions: List[Message], proof: Long, timestamp: Long): NonEmptyChain = {
+  def addBlock(transactions: List[Transaction], proof: Long, timestamp: Long): NonEmptyChain = {
     val newBlock = PopulatedBlock(this.mostRecentBlocksIndex + 1, transactions, proof, timestamp)
     NonEmptyChain(blocks = this.blocks :+ newBlock)
   }
