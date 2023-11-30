@@ -15,11 +15,13 @@ abstract class ScalaBlockchainActor[T: Manifest] extends Actor with ActorLogging
   type ReceiveType[T] = PartialFunction[T, Unit]
   def handleMessages: ReceiveType[T]
 
-  private def appliedHandleMessages: PartialFunction[Any, Unit] = { case x: T => handleMessages(x) }
+  private def appliedHandleMessages: Receive = { case x: T => handleMessages(x) }
 
-  def untypedMessages: PartialFunction[Any, Unit] = PartialFunction.empty[Any, Unit]
+  private def handleFailure: Receive = { case Status.Failure(e) => throw e }
 
-  override def receive: PartialFunction[Any, Unit] = appliedHandleMessages orElse untypedMessages
+  def untypedMessages: Receive = PartialFunction.empty[Any, Unit]
+
+  override def receive: Receive = handleFailure orElse appliedHandleMessages orElse untypedMessages
   implicit class FutureHelpers[A](future: Future[A]) {
     def givenSuccess[B](func: A => B) = {
       future onComplete {
