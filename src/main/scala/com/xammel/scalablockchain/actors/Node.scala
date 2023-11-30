@@ -2,15 +2,12 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.{ActorRef, Props, Status}
 import akka.pattern.ask
-import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
-import com.xammel.scalablockchain.crypto.Crypto
 import com.xammel.scalablockchain.models._
 import com.xammel.scalablockchain.pubsub.PubSub._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
 /*
@@ -49,7 +46,10 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       4. encrypt message payload with the public key
       5. send the new message, with new payload to the broker to add
        */
-      (keeper ? KeeperOfKeys.GetPublicKey).mapTo[String] givenSuccess { s => log.info(s"got ya $s") }
+      (keeper ? KeeperOfKeys.GetPublicKey(transaction)).mapTo[String] onComplete {
+        case Success(s) => log.info(s"got ya $s")
+        case Failure(e) => sender() ! Status.Failure(e)
+      }
       broker ! Broker.AddTransactionToPending(transaction)
     case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>

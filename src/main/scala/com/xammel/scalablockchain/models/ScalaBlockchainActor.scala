@@ -1,6 +1,6 @@
 package com.xammel.scalablockchain.models
 
-import akka.actor.{Actor, ActorLogging, Status}
+import akka.actor.{Actor, ActorLogging, ActorRef, Status}
 import akka.util.Timeout
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,7 +24,7 @@ abstract class ScalaBlockchainActor[T: Manifest] extends Actor with ActorLogging
     def givenSuccess[B](func: A => B) = {
       future onComplete {
         case Success(v) => func(v)
-        case Failure(e) => sender ! Status.Failure(e)
+        case Failure(e) => sender() ! Status.Failure(e)
       }
     }
   }
