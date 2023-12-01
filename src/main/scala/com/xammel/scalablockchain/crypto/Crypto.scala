@@ -46,20 +46,20 @@ object Crypto {
     gen.generateKeyPair
   }
 
-  val nodeId                                            = "node0"
-  val keyPair                                           = generateKeyPair
-  val Seq(privateKey: PrivateKey, publicKey: PublicKey) = Seq(keyPair.getPrivate, keyPair.getPublic)
-
-  val message          = "hi there my name is mindy"
-  val encryptedMessage = encrypt(publicKey)(message)
-  val decryptedMessage2 = decrypt(privateKey)(encryptedMessage)
-
-  val keyPair2 = generateKeyPair
-  val Seq(privateKey2: PrivateKey, publicKey2: PublicKey) =
-    Seq(keyPair2.getPrivate, keyPair2.getPublic)
-
-  //val decryptedMessage2 = decrypt(privateKey2)(encryptedMessage)
-  val encrypted2 = encrypt(publicKey2)(message)
-  val decrypted2 = decrypt(privateKey2)(encrypted2)
+//  val nodeId                                            = "node0"
+//  val keyPair                                           = generateKeyPair
+//  val Seq(privateKey: PrivateKey, publicKey: PublicKey) = Seq(keyPair.getPrivate, keyPair.getPublic)
+//
+//  val message          = "hi there my name is mindy"
+//  val encryptedMessage = encrypt(publicKey)(message)
+//  val decryptedMessage2 = decrypt(privateKey)(encryptedMessage)
+//
+//  val keyPair2 = generateKeyPair
+//  val Seq(privateKey2: PrivateKey, publicKey2: PublicKey) =
+//    Seq(keyPair2.getPrivate, keyPair2.getPublic)
+//
+//  //val decryptedMessage2 = decrypt(privateKey2)(encryptedMessage)
+//  val encrypted2 = encrypt(publicKey2)(message)
+//  val decrypted2 = decrypt(privateKey2)(encrypted2)
 
 }

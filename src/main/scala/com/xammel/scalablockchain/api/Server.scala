@@ -24,7 +24,7 @@ object Server extends App with NodeRoutes {
   val port           = config.getInt("http.port")
   val nodeId         = config.getString("scalablockchain.node.id")
 
-  private lazy val routes: Route = statusRoutes ~ transactionRoutes ~ mineRoutes
+  private lazy val routes: Route = statusRoutes ~ transactionRoutes ~ mineRoutes ~ messengerRoutes
 
   val cluster            = Cluster(system)
   val mediator: ActorRef = DistributedPubSub(system).mediator
