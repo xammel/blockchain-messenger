@@ -3,11 +3,9 @@ package com.xammel.scalablockchain.actors
 import akka.actor.{ActorRef, Props, Status}
 import akka.pattern.ask
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
-import com.xammel.scalablockchain.crypto.Crypto.encrypt
 import com.xammel.scalablockchain.models._
 import com.xammel.scalablockchain.pubsub.PubSub._
 
-import java.security.PublicKey
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -33,27 +31,16 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
-  mediator ! subscribeGetPublicKey(keeper)
 
   miner ! ReadyYourself
 
   override def handleMessages: ReceiveType[NodeMessage] = {
     case TransactionMessage(message, messageNodeId) =>
+      //TODO check the node has enough tokens to send a message
       log.info(s"Received transaction message from $messageNodeId")
-      /*
-      plan:
-      1. transaction is a reward or a message. If reward just add to broker pending txns
-      2. if message...
-      3. get public key for the recipient
-      4. encrypt message payload with the public key
-      5. send the new message, with new payload to the broker to add
-       */
-      keeper.askAndMap(KeeperOfKeys.GetPublicKey(message)) { recipientPublicKey: PublicKey =>
-        val encryptedMessagePayload: String = encrypt(recipientPublicKey)(message.message)
-        val encryptedMessage: Message       = message.copy(message = encryptedMessagePayload)
+      keeper.askAndMap(KeeperOfKeys.EncryptMessage(message)) { encryptedMessage: Message =>
         broker ! Broker.AddTransactionToPending(encryptedMessage)
       }
-//      broker ! Broker.AddTransactionToPending(message)
     case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
       val node = sender()
@@ -87,9 +74,6 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
         val receivedMessages: List[Message]         = receivedTransactions.collect { case m: Message => m }
         keeper.askAndMap(KeeperOfKeys.ReadMessages(receivedMessages)) { messages => node ! messages }
       }
-    //TODO don't think these two are used
-    case GetLastBlockIndex => blockchain forward Blockchain.GetLastIndex
-    case GetLastBlockHash  => blockchain forward Blockchain.GetLastHash
   }
 
   private def rewardMiningAndAddBlock(solution: Long): Unit = {
@@ -115,7 +99,7 @@ object Node extends ActorName {
 
   case class TransactionMessage(message: Message, nodeId: String) extends NodeMessage
 
-  case class CheckPowSolution(solution: Long) extends NodeMessage
+  private case class CheckPowSolution(solution: Long) extends NodeMessage
 
   case class AddBlock(proof: Long, transactions: List[Transaction], timestamp: Long) extends NodeMessage
 
@@ -124,11 +108,6 @@ object Node extends ActorName {
   case object Mine extends NodeMessage
 
   case object GetStatus extends NodeMessage
-
-  //TODO these two aren't used yet...
-  case object GetLastBlockIndex extends NodeMessage
-
-  case object GetLastBlockHash extends NodeMessage
 
   case class GetRecipientPublicKey(recipientNodeId: String) extends NodeMessage
   case object ReadMessages                                  extends NodeMessage
