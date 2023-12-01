@@ -46,11 +46,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       4. encrypt message payload with the public key
       5. send the new message, with new payload to the broker to add
        */
-      self ! Status.Failure(new Exception("test test test"))
-      (keeper ? KeeperOfKeys.GetPublicKey(transaction)).mapTo[String] onComplete {
-        case Success(s) => log.info(s"got ya $s")
-        case Failure(e) => sender() ! Status.Failure(e)
-      }
+      keeper.askAndMap(KeeperOfKeys.GetPublicKey(transaction)) { key: String => log.info(s"recipient key: $key") }
       broker ! Broker.AddTransactionToPending(transaction)
     case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
@@ -101,9 +97,9 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 object Node extends ActorName {
   sealed trait NodeMessage
 
-  case class AddTransaction(transaction: Message) extends NodeMessage
+  case class AddTransaction(message: Message) extends NodeMessage
 
-  case class TransactionMessage(transaction: Message, nodeId: String) extends NodeMessage
+  case class TransactionMessage(message: Message, nodeId: String) extends NodeMessage
 
   case class CheckPowSolution(solution: Long) extends NodeMessage
 

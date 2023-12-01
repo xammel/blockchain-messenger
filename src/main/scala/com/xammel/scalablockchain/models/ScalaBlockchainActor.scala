@@ -1,11 +1,11 @@
 package com.xammel.scalablockchain.models
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Status}
+import akka.pattern.ask
 import akka.util.Timeout
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 abstract class ScalaBlockchainActor[T: Manifest] extends Actor with ActorLogging {
@@ -23,18 +23,19 @@ abstract class ScalaBlockchainActor[T: Manifest] extends Actor with ActorLogging
 
   override def receive: Receive = handleFailure orElse appliedHandleMessages orElse untypedMessages
   implicit class FutureHelpers[A](future: Future[A]) {
-    def givenSuccess[B](func: A => B) = {
+
+    def givenSuccess[B](func: A => B)(implicit ec: ExecutionContext): Unit = {
       future onComplete {
         case Success(v) => func(v)
-        case Failure(e) => sender() ! Status.Failure(e)
+        case Failure(e) => log.error(s"Future completed with a failure: ${e.getMessage}")
       }
     }
   }
-  //TODO implement?
-  //  implicit class ActorHelpers(actor: ActorRef) {
-//    def askAndMap[A: Manifest, B](message: Any)(func: A => B)(implicit timeout: Timeout): Unit = {
-//      (actor ? message).mapTo[A].givenSuccess(func)
-//    }
-//  }
+
+  implicit class ActorHelpers(actor: ActorRef) {
+    def askAndMap[A: Manifest, B](message: Any)(func: A => B)(implicit timeout: Timeout, ec: ExecutionContext): Unit = {
+      (actor ? message).mapTo[A].givenSuccess(func)
+    }
+  }
 
 }

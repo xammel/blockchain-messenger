@@ -1,14 +1,14 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{ActorRef, Props, Status}
+import akka.actor.{ActorRef, Props}
 import akka.pattern.ask
 import com.xammel.scalablockchain.crypto.Crypto
+import com.xammel.scalablockchain.crypto.Crypto.base64Encode
 import com.xammel.scalablockchain.models.{ActorName, Message, ScalaBlockchainActor}
 import com.xammel.scalablockchain.pubsub.PubSub.publishGetPublicKey
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.security.KeyPair
-import scala.util.{Failure, Success}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[KeeperOfKeys.KeeperMessage] {
 
@@ -31,19 +31,13 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
    */
   override def handleMessages: ReceiveType[KeeperOfKeys.KeeperMessage] = {
     case GetPublicKey(message: Message) => {
-      //TODO revert
-      log.info(s"publishing to ${message.beneficiary} - $nodeId")
       val node = sender()
-      (mediator ? publishGetPublicKey(GetRecipientPublicKey(message))).mapTo[String] onComplete  {
-        case Success(key) => node ! key
-        case Failure(e) => node ! Status.Failure(e)
+      (mediator ? publishGetPublicKey(GetRecipientPublicKey(message))).mapTo[String] givenSuccess { key =>
+        node ! key
       }
     }
     case GetRecipientPublicKey(message: Message) if message.beneficiary != nodeId => //ignore
-    case GetRecipientPublicKey(message: Message) if message.beneficiary == nodeId =>
-      //TODO revert
-      log.info(s"inside the sending func to ${message.beneficiary} - $nodeId")
-      sender() ! Crypto.base64Encode(keyPair.getPublic.getEncoded)
+    case GetRecipientPublicKey(message: Message) if message.beneficiary == nodeId => sender() ! base64Encode(keyPair.getPublic.getEncoded)
   }
 }
 

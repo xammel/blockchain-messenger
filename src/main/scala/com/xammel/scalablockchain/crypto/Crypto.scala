@@ -6,8 +6,12 @@ import java.util.Base64
 import javax.crypto.Cipher
 
 object Crypto {
+
+  lazy val RSA = "RSA"
+  lazy val sha256 = "SHA-256"
+
   def sha256Hash(value: String) = {
-    val encoder: MessageDigest    = MessageDigest.getInstance("SHA-256")
+    val encoder: MessageDigest    = MessageDigest.getInstance(sha256)
     val valueBytes: Array[Byte]   = value.getBytes(StandardCharsets.UTF_8)
     val encodedBytes: Array[Byte] = encoder.digest(valueBytes)
     val charArray: Array[String]  = encodedBytes.map("%02x".format(_))
@@ -23,7 +27,7 @@ object Crypto {
   }
 
   def encrypt(publicKey: PublicKey)(message: String) = {
-    val cipher: Cipher = Cipher.getInstance("RSA")
+    val cipher: Cipher = Cipher.getInstance(RSA)
     cipher.init(Cipher.ENCRYPT_MODE, publicKey)
     val data: Array[Byte] = cipher.doFinal(message.getBytes)
     base64Encode(data)
@@ -31,15 +35,14 @@ object Crypto {
 
   def decrypt(privateKey: PrivateKey)(encryptedMessage: String) = {
     val data           = base64Decode(encryptedMessage)
-    val cipher: Cipher = Cipher.getInstance("RSA")
+    val cipher: Cipher = Cipher.getInstance(RSA)
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
     new String(cipher.doFinal(data))
   }
 
   def generateKeyPair = {
-    val gen = KeyPairGenerator.getInstance("RSA")
-    gen.initialize(1024, new SecureRandom())
-
+    val gen = KeyPairGenerator.getInstance(RSA)
+    gen.initialize(1024, new SecureRandom)
     gen.generateKeyPair
   }
 
@@ -49,7 +52,7 @@ object Crypto {
 
   val message          = "hi there my name is mindy"
   val encryptedMessage = encrypt(publicKey)(message)
-  val decryptedMessage = decrypt(privateKey)(encryptedMessage)
+  val decryptedMessage2 = decrypt(privateKey)(encryptedMessage)
 
   val keyPair2 = generateKeyPair
   val Seq(privateKey2: PrivateKey, publicKey2: PublicKey) =
