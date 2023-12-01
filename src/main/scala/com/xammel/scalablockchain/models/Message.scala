@@ -11,7 +11,7 @@ sealed trait Transaction {
 }
 
 case class MiningReward(originator: String, beneficiary: String) extends Transaction {
-  override val value: Long = 10
+  override val value: Long = 10 //TODO review
 }
 
 case class Message(
@@ -19,5 +19,5 @@ case class Message(
     beneficiary: String,
     message: String
 ) extends Transaction {
-  override val value: Long = 1
+  override val value: Long = 1 //TODO review
 }

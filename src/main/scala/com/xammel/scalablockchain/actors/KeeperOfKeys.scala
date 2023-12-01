@@ -18,22 +18,21 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
 
   lazy val keyPair: KeyPair                                       = Crypto.generateKeyPair
   private lazy val (privateKey: PrivateKey, publicKey: PublicKey) = (keyPair.getPrivate, keyPair.getPublic)
-  private val encryptor: String => String                         = encrypt(publicKey)
-  private val decryptor: String => String                         = decrypt(privateKey)
+  private lazy val encryptor: String => String                         = encrypt(publicKey)
+  private lazy val decryptor: String => String                         = decrypt(privateKey)
 
   override def handleMessages: ReceiveType[KeeperOfKeys.KeeperMessage] = {
     case EncryptMessage(msg) => sender() ! msg.copy(message = encryptor(msg.message))
     case GetPublicKey(message) =>
-      val node = sender()
+      val senderRef = sender()
       (mediator ? publishGetPublicKey(GetRecipientPublicKey(message))).mapTo[PublicKey] givenSuccess { key =>
-        node ! key
+        senderRef ! key
       }
     case GetRecipientPublicKey(message) if message.beneficiary != nodeId => //ignore
     case GetRecipientPublicKey(message) if message.beneficiary == nodeId => sender() ! publicKey
     case ReadMessages(messages) =>
-      val node                             = sender()
       val decryptedMessages: List[Message] = messages.map(msg => msg.copy(message = decryptor(msg.message)))
-      node ! decryptedMessages
+      sender() ! decryptedMessages
   }
 }
 

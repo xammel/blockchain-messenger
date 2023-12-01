@@ -43,10 +43,10 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       }
     case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
-      val node = sender()
+      val senderRef = sender()
       (blockchain ? Blockchain.GetLastHash).mapTo[String] onComplete {
-        case Success(hash: String) => miner.tell(Miner.Validate(hash, solution), node)
-        case Failure(e)            => node ! Status.Failure(e)
+        case Success(hash: String) => miner.tell(Miner.Validate(hash, solution), senderRef)
+        case Failure(e)            => senderRef ! Status.Failure(e)
       }
     case AddBlock(proof, transactions, timestamp) =>
       (self ? CheckPowSolution(proof)) givenSuccess { _ =>
@@ -67,26 +67,20 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case GetTransactions => broker forward Broker.GetPendingTransactions
     case GetStatus       => blockchain forward Blockchain.GetChain
     case ReadMessages =>
-      val node = sender()
-      blockchain.askAndMap(Blockchain.GetChain) { chain: Chain =>
-        val populatedBlocks: List[PopulatedBlock]   = chain.blocks.collect { case p: PopulatedBlock => p }
-        val receivedTransactions: List[Transaction] = populatedBlocks.flatMap(_.transactions).filter(_.beneficiary == nodeId)
-        val receivedMessages: List[Message]         = receivedTransactions.collect { case m: Message => m }
-        keeper.askAndMap(KeeperOfKeys.ReadMessages(receivedMessages)) { messages => node ! messages }
+      val senderRef = sender()
+      blockchain.askAndMap(Blockchain.CollectReceivedMessages) { receivedMessages: List[Message] =>
+//        keeper.askAndMap(KeeperOfKeys.ReadMessages(receivedMessages)) { messages => senderRef ! messages }
+        keeper.tell(KeeperOfKeys.ReadMessages(receivedMessages), senderRef)
       }
   }
 
   private def rewardMiningAndAddBlock(solution: Long): Unit = {
-    //TODO should there be a criteria which only allows blocks to be mined if there
-    // exist pending transactions. otherwise blocks can be mined with just the 1 mining reward
-    // transaction in them
 
     val time = System.currentTimeMillis()
 
     broker ! Broker.AddTransactionToPending(createMiningRewardTransaction(nodeId))
-    (broker ? Broker.GetPendingTransactions).mapTo[List[Transaction]] onComplete {
-      case Success(transactions) => mediator ! publishNewBlock(AddBlock(solution, transactions, time))
-      case Failure(exception)    => sender ! Failure(exception)
+    broker.askAndMap(Broker.GetPendingTransactions) { transactions: List[Transaction] =>
+       mediator ! publishNewBlock(AddBlock(solution, transactions, time))
     }
     miner ! Miner.ReadyYourself
   }
