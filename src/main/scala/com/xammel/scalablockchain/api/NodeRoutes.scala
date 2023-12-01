@@ -69,7 +69,7 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
   }
 
   private def tellNodeToReadMessages: Route = {
-    val messagesRetrieved: Future[List[String]] = (node ? ReadMessages).mapTo[List[String]]
+    val messagesRetrieved: Future[List[Message]] = (node ? ReadMessages).mapTo[List[Message]]
     onSuccess(messagesRetrieved) { messages =>
       complete(messages)
     }
