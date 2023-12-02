@@ -1,7 +1,7 @@
 package com.xammel.scalablockchain.actors
 
 import akka.actor.Props
-import com.xammel.scalablockchain.models.{ActorName, Message, ScalaBlockchainActor, Transaction}
+import com.xammel.scalablockchain.models.{ActorName, ScalaBlockchainActor, Transaction}
 
 class Broker extends ScalaBlockchainActor[Broker.BrokerMessage] {
 
@@ -17,7 +17,7 @@ class Broker extends ScalaBlockchainActor[Broker.BrokerMessage] {
       log.info(s"Added transaction ${transaction.transactionId} to pending transactions")
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
-      sender() ! pending
+      sender ! pending
     case DiffTransaction(externalTransactions) => pending = pending diff externalTransactions
     //TODO unsure on the use of this
     //    case SubscribeAck(Subscribe("transaction", None, `self`)) => log.info("subscribing")

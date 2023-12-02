@@ -22,21 +22,21 @@ class Miner extends ScalaBlockchainActor[Miner.MinerMessage] {
       val proof: Future[Long] = Future {
         proofOfWork(hash)
       }
-      sender() ! proof
+      sender ! proof
       become(busy)
     case ReadyYourself =>
       log.info("I'm ready to mine!")
-      sender() ! Success("OK")
+      sender ! Success("OK")
   }
 
   private def validate: Receive = { case Validate(hash, proof) =>
     log.info(s"Validating proof $proof")
     if (isValidProof(hash, proof)) {
       log.info("Proof is valid!")
-      sender() ! Success
+      sender ! Success("Valid")
     } else {
       log.info("Proof is not valid")
-      sender() ! Failure(InvalidProofException(hash, proof))
+      sender ! Failure(InvalidProofException(hash, proof))
     }
   }
 

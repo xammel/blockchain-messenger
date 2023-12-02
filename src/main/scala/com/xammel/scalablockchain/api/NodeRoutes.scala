@@ -10,7 +10,7 @@ import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.actors.Node.{AddTransaction, GetTransactions, Mine, ReadMessages}
 import com.xammel.scalablockchain.json.JsonSupport
-import com.xammel.scalablockchain.models.{Chain, Message}
+import com.xammel.scalablockchain.models.{Chain, MessageTransaction}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -49,15 +49,15 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
   }
 
   private def askTransactionsFromNode: Route = {
-    val transactionsRetrieved: Future[List[Message]] =
-      (node ? GetTransactions).mapTo[List[Message]]
+    val transactionsRetrieved: Future[List[MessageTransaction]] =
+      (node ? GetTransactions).mapTo[List[MessageTransaction]]
     onSuccess(transactionsRetrieved) { transactions =>
       complete(transactions)
     }
   }
 
   private def tellNodeToAddTransaction: Route = {
-    entity(as[Message]) { transaction =>
+    entity(as[MessageTransaction]) { transaction =>
       node ! AddTransaction(transaction)
       complete(StatusCodes.OK)
     }
@@ -69,7 +69,7 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
   }
 
   private def tellNodeToReadMessages: Route = {
-    val messagesRetrieved: Future[List[Message]] = (node ? ReadMessages).mapTo[List[Message]]
+    val messagesRetrieved: Future[List[MessageTransaction]] = (node ? ReadMessages).mapTo[List[MessageTransaction]]
     onSuccess(messagesRetrieved) { messages =>
       complete(messages)
     }

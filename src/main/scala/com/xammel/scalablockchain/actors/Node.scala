@@ -1,6 +1,6 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, Props, Status}
 import akka.pattern.ask
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
 import com.xammel.scalablockchain.models._
@@ -36,17 +36,17 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case TransactionMessage(message, messageNodeId) =>
       //TODO check the node has enough tokens to send a message
       log.info(s"Received transaction message from $messageNodeId")
-      keeper.askAndMap(KeeperOfKeys.EncryptMessage(message)) { encryptedMessage: Message =>
+      keeper.askAndMap(KeeperOfKeys.EncryptMessage(message)) { encryptedMessage: MessageTransaction =>
         broker ! Broker.AddTransactionToPending(encryptedMessage)
       }
     case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
     case CheckPowSolution(solution) =>
-      val senderRef = sender()
+      val senderRef = sender
       blockchain.askAndMap(Blockchain.GetLastHash) { hash: String =>
         miner.tell(Miner.Validate(hash, solution), senderRef)
       }
     case AddBlock(proof, transactions, timestamp) =>
-      (self ? CheckPowSolution(proof)) givenSuccess { _ =>
+      self.askAndMap(CheckPowSolution(proof)) { _: String =>
         broker ! Broker.DiffTransaction(transactions)
         blockchain ! Blockchain.AddBlockCommand(transactions, proof, timestamp)
         miner ! ReadyYourself
@@ -60,8 +60,8 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case GetTransactions => broker forward Broker.GetPendingTransactions
     case GetStatus       => blockchain forward Blockchain.GetChain
     case ReadMessages =>
-      val senderRef = sender()
-      blockchain.askAndMap(Blockchain.CollectReceivedMessages) { receivedMessages: List[Message] =>
+      val senderRef = sender
+      blockchain.askAndMap(Blockchain.CollectReceivedMessages) { receivedMessages: List[MessageTransaction] =>
         keeper.tell(KeeperOfKeys.ReadMessages(receivedMessages), senderRef)
       }
   }
@@ -81,9 +81,9 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 object Node extends ActorName {
   sealed trait NodeMessage
 
-  case class AddTransaction(message: Message) extends NodeMessage
+  case class AddTransaction(message: MessageTransaction) extends NodeMessage
 
-  case class TransactionMessage(message: Message, nodeId: String) extends NodeMessage
+  case class TransactionMessage(message: MessageTransaction, nodeId: String) extends NodeMessage
 
   private case class CheckPowSolution(solution: Long) extends NodeMessage
 

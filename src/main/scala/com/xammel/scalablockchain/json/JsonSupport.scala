@@ -13,13 +13,13 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
 
     override def write(obj: Transaction): JsValue = obj match {
-      case msg: Message         => MessageJsonFormat.write(msg)
+      case msg: MessageTransaction         => MessageJsonFormat.write(msg)
       case reward: MiningReward => MiningRewardJsonFormat.write(reward)
     }
   }
 
-  implicit object MessageJsonFormat extends RootJsonFormat[Message] {
-    def write(msg: Message): JsValue = JsObject(
+  implicit object MessageJsonFormat extends RootJsonFormat[MessageTransaction] {
+    def write(msg: MessageTransaction): JsValue = JsObject(
       transactionId -> JsString(msg.transactionId),
       originator    -> JsString(msg.originator),
       beneficiary   -> JsString(msg.beneficiary),
@@ -27,11 +27,11 @@ trait JsonSupport extends DefaultJsonProtocol {
       value         -> JsNumber(msg.value)
     )
 
-    def read(jsValue: JsValue): Message = {
+    def read(jsValue: JsValue): MessageTransaction = {
       val expectedFields = Seq(originator, beneficiary, message)
       jsValue.asJsObject.getFields(expectedFields: _*) match {
         case Seq(JsString(sender), JsString(recipient), JsString(message)) =>
-          Message(originator = sender, beneficiary = recipient, message = message)
+          MessageTransaction(originator = sender, beneficiary = recipient, message = message)
         case seq => throw DeserializationError(seq, expectedFields)
       }
     }
@@ -89,7 +89,7 @@ trait JsonSupport extends DefaultJsonProtocol {
             ) =>
           PopulatedBlock(
             index = index.toInt,
-            transactions = transactions.convertTo[List[Message]],
+            transactions = transactions.convertTo[List[MessageTransaction]],
             proof = proof.toLong,
             timestamp = timestamp.toLong
           )

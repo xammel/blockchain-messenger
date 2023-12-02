@@ -2,7 +2,7 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.{ActorLogging, Props}
 import akka.persistence._
-import com.xammel.scalablockchain.models.{ActorName, Chain, Message, PopulatedBlock, Transaction}
+import com.xammel.scalablockchain.models.{ActorName, Chain, MessageTransaction, PopulatedBlock, Transaction}
 
 //TODO if facing long actor recovery times, could implement snapshotting.
 class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with ActorLogging {
@@ -14,7 +14,7 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
   private var state: Chain                            = chain
   private def populatedBlocks: List[PopulatedBlock]   = state.blocks.collect { case p: PopulatedBlock => p }
   private def receivedTransactions: List[Transaction] = populatedBlocks.flatMap(_.transactions).filter(_.beneficiary == nodeId)
-  def receivedMessages: List[Message]                 = receivedTransactions.collect { case m: Message => m }
+  def receivedMessages: List[MessageTransaction]                 = receivedTransactions.collect { case m: MessageTransaction => m }
 
   override def receiveRecover: Receive = {
     case RecoveryCompleted      => log.info("Recovery completed")
@@ -23,9 +23,9 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
 
   override def receiveCommand: Receive = {
     case command: AddBlockCommand => persist(command)(updateState)
-    case GetChain                 => sender() ! state
-    case GetLastHash              => sender() ! state.mostRecentBlocksHash
-    case CollectReceivedMessages  => sender() ! receivedMessages
+    case GetChain                 => sender ! state
+    case GetLastHash              => sender ! state.mostRecentBlocksHash
+    case CollectReceivedMessages  => sender ! receivedMessages
   }
 
   def updateState(command: AddBlockCommand) = {

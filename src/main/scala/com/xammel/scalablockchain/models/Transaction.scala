@@ -14,7 +14,7 @@ case class MiningReward(originator: String, beneficiary: String) extends Transac
   override val value: Long = 10 //TODO review
 }
 
-case class Message(
+case class MessageTransaction(
     originator: String,
     beneficiary: String,
     message: String
