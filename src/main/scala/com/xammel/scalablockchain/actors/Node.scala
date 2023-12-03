@@ -1,6 +1,6 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{ActorRef, Props, Status}
+import akka.actor.{ActorRef, Props}
 import akka.pattern.ask
 import com.xammel.scalablockchain.actors.Miner.ReadyYourself
 import com.xammel.scalablockchain.models._
@@ -26,6 +26,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
   private val miner      = context.actorOf(Miner.props, Miner.actorName)
   private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
   private val keeper     = context.actorOf(KeeperOfKeys.props(nodeId, mediator), KeeperOfKeys.actorName)
+  private val accountant = context.actorOf(Accountant.props(nodeId), Accountant.actorName)
 
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
@@ -36,6 +37,11 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case TransactionMessage(message, messageNodeId) =>
       //TODO check the node has enough tokens to send a message
       log.info(s"Received transaction message from $messageNodeId")
+
+      blockchain.askAndMap(Blockchain.GetChain) { chain: Chain =>
+        accountant.askAndMap(Accountant.CalculateBalance(chain)) { balance: Long => log.info(s"balance of $nodeId is $balance") }
+      }
+
       keeper.askAndMap(KeeperOfKeys.EncryptMessage(message)) { encryptedMessage: MessageTransaction =>
         broker ! Broker.AddTransactionToPending(encryptedMessage)
       }
@@ -76,6 +82,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     }
     miner ! Miner.ReadyYourself
   }
+
 }
 
 object Node extends ActorName {
@@ -101,5 +108,5 @@ object Node extends ActorName {
   def props(nodeId: String, mediator: ActorRef): Props = Props(new Node(nodeId, mediator))
 
   //TODO edit amount to be configurable
-  def createMiningRewardTransaction(nodeId: String): Transaction = MiningReward("theBank", nodeId)
+  private def createMiningRewardTransaction(nodeId: String): Transaction = MiningReward("theBank", nodeId)
 }

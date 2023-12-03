@@ -14,6 +14,27 @@ sealed trait Chain {
     val newBlock = PopulatedBlock(this.mostRecentBlocksIndex + 1, transactions, proof, timestamp)
     NonEmptyChain(blocks = this.blocks :+ newBlock)
   }
+
+  private def populatedBlocks: List[PopulatedBlock] = this.blocks.collect { case p: PopulatedBlock => p }
+
+  private def allTransactionsOnChain: List[Transaction] = populatedBlocks.flatMap(_.transactions)
+
+  private def transactionsTo(nodeId: String): List[Transaction] =
+    allTransactionsOnChain.filter(_.beneficiary == nodeId)
+
+  private def transactionsFrom(nodeId: String): List[Transaction] =
+    allTransactionsOnChain.filter(_.originator == nodeId)
+
+  def messageTransactionsTo(nodeId: String): List[MessageTransaction] = transactionsTo(nodeId).collect {
+    case m: MessageTransaction => m
+  }
+
+  def messageTransactionsFrom(nodeId: String): List[MessageTransaction] = transactionsFrom(nodeId).collect {
+    case m: MessageTransaction => m
+  }
+
+  def miningRewardsTo(nodeId: String): List[MiningReward] = transactionsTo(nodeId).collect { case m: MiningReward => m }
+
 }
 
 case class NonEmptyChain(blocks: List[Block]) extends Chain
@@ -29,10 +50,10 @@ sealed trait Block {
 }
 
 case class PopulatedBlock(
-                           index: Long,
-                           transactions: List[Transaction],
-                           proof: Long,
-                           timestamp: Long
+    index: Long,
+    transactions: List[Transaction],
+    proof: Long,
+    timestamp: Long
 ) extends Block {
   val hash = sha256Hash(this.toString)
 }

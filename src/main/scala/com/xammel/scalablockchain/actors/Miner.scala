@@ -7,6 +7,7 @@ import com.xammel.scalablockchain.models.{ActorName, ScalaBlockchainActor}
 import com.xammel.scalablockchain.proof.ProofOfWork._
 
 import scala.concurrent.Future
+
 class Miner extends ScalaBlockchainActor[Miner.MinerMessage] {
 
   import Miner._
@@ -48,6 +49,7 @@ class Miner extends ScalaBlockchainActor[Miner.MinerMessage] {
       log.info("Ready to mine a new block")
       become(ready)
   }
+
 }
 
 object Miner extends ActorName {
