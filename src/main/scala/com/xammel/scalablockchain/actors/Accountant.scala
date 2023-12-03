@@ -3,10 +3,10 @@ package com.xammel.scalablockchain.actors
 import akka.actor.Props
 import com.xammel.scalablockchain.models.{ActorName, Chain, MiningReward, ScalaBlockchainActor}
 
-class Accountant(nodeId: String) extends ScalaBlockchainActor[Accountant.AccountantMessage] {
+class Accountant extends ScalaBlockchainActor[Accountant.AccountantMessage] {
   import Accountant._
 
-  private def balance(chain: Chain): Long = {
+  private def balance(chain: Chain, nodeId: String): Long = {
     val receivedMiningRewards: List[MiningReward] = chain.miningRewardsTo(nodeId)
     val receivedTokens: Long                      = receivedMiningRewards.map(_.value).sum
     val sentMessageTransactions                   = chain.messageTransactionsFrom(nodeId)
@@ -14,15 +14,16 @@ class Accountant(nodeId: String) extends ScalaBlockchainActor[Accountant.Account
     receivedTokens - spentTokens
   }
 
-  override def handleMessages: ReceiveType[Accountant.AccountantMessage] = { case CalculateBalance(chain) =>
-    sender ! balance(chain)
+  override def handleMessages: ReceiveType[Accountant.AccountantMessage] = {
+    //TODO doesn't currently account for transactions pending
+    case CalculateBalance(chain, nodeId) => sender ! balance(chain, nodeId)
   }
 
 }
 
 object Accountant extends ActorName {
   sealed trait AccountantMessage
-  case class CalculateBalance(chain: Chain) extends AccountantMessage
+  case class CalculateBalance(chain: Chain, nodeId: String) extends AccountantMessage
 
-  def props(nodeId: String): Props = Props(new Accountant(nodeId))
+  val props: Props = Props(new Accountant)
 }

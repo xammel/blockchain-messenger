@@ -26,7 +26,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
   private val miner      = context.actorOf(Miner.props, Miner.actorName)
   private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
   private val keeper     = context.actorOf(KeeperOfKeys.props(nodeId, mediator), KeeperOfKeys.actorName)
-  private val accountant = context.actorOf(Accountant.props(nodeId), Accountant.actorName)
+  private val accountant = context.actorOf(Accountant.props, Accountant.actorName)
 
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
@@ -34,18 +34,20 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
   miner ! ReadyYourself
 
   override def handleMessages: ReceiveType[NodeMessage] = {
-    case TransactionMessage(message, messageNodeId) =>
-      //TODO check the node has enough tokens to send a message
-      log.info(s"Received transaction message from $messageNodeId")
-
-      blockchain.askAndMap(Blockchain.GetChain) { chain: Chain =>
-        accountant.askAndMap(Accountant.CalculateBalance(chain)) { balance: Long => log.info(s"balance of $nodeId is $balance") }
-      }
-
+    case TransactionMessage(message, senderNodeId) =>
+      log.info(s"Received message from node $senderNodeId to add a transaction to the pending list")
       keeper.askAndMap(KeeperOfKeys.EncryptMessage(message)) { encryptedMessage: MessageTransaction =>
         broker ! Broker.AddTransactionToPending(encryptedMessage)
       }
-    case AddTransaction(transaction) => mediator ! publishTransaction(TransactionMessage(transaction, nodeId))
+    case AddTransaction(messageTransaction) =>
+      self.askAndMap(GetBalance(messageTransaction.originator)) { balance: Long =>
+        if (balance < messageTransaction.value)
+          log.error(
+            s"Node ${messageTransaction.originator} has a balance of $balance which is insufficient to schedule this message, costing ${messageTransaction.value}"
+          )
+        else
+          mediator ! publishTransaction(TransactionMessage(messageTransaction, nodeId))
+      }
     case CheckPowSolution(solution) =>
       val senderRef = sender
       blockchain.askAndMap(Blockchain.GetLastHash) { hash: String =>
@@ -70,6 +72,11 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       blockchain.askAndMap(Blockchain.CollectReceivedMessages) { receivedMessages: List[MessageTransaction] =>
         keeper.tell(KeeperOfKeys.ReadMessages(receivedMessages), senderRef)
       }
+    case GetBalance(nodeId) =>
+      val senderRef = sender
+      blockchain.askAndMap(Blockchain.GetChain) { chain: Chain =>
+        accountant.askAndMap(Accountant.CalculateBalance(chain, nodeId)) { balance: Long => senderRef ! balance }
+      }
   }
 
   private def rewardMiningAndAddBlock(solution: Long): Unit = {
@@ -90,7 +97,7 @@ object Node extends ActorName {
 
   case class AddTransaction(message: MessageTransaction) extends NodeMessage
 
-  case class TransactionMessage(message: MessageTransaction, nodeId: String) extends NodeMessage
+  case class TransactionMessage(message: MessageTransaction, senderNodeId: String) extends NodeMessage
 
   private case class CheckPowSolution(solution: Long) extends NodeMessage
 
@@ -104,6 +111,7 @@ object Node extends ActorName {
 
   case class GetRecipientPublicKey(recipientNodeId: String) extends NodeMessage
   case object ReadMessages                                  extends NodeMessage
+  case class GetBalance(nodeId: String)                     extends NodeMessage
 
   def props(nodeId: String, mediator: ActorRef): Props = Props(new Node(nodeId, mediator))
 

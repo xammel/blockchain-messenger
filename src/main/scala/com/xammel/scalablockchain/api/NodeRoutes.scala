@@ -8,7 +8,7 @@ import akka.http.scaladsl.server.Route
 import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
-import com.xammel.scalablockchain.actors.Node.{AddTransaction, GetTransactions, Mine, ReadMessages}
+import com.xammel.scalablockchain.actors.Node._
 import com.xammel.scalablockchain.json.JsonSupport
 import com.xammel.scalablockchain.models.{Chain, MessageTransaction}
 
@@ -20,13 +20,16 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
   implicit def system: ActorSystem
 
   def node: ActorRef
+  val nodeId: String
   def clusterListener: ActorRef
 
   implicit lazy val timeout = Timeout(5.seconds)
 
   lazy val messengerRoutes: Route = path(NodeRoutes.messages) { get { tellNodeToReadMessages } }
 
-  lazy val statusRoutes: Route = path(NodeRoutes.status) { get { askStatusFromNode } }
+  lazy val statusRoutes: Route = path(NodeRoutes.status) { concat { get { askStatusFromNode } } }
+
+  lazy val balanceRoutes: Route = path(NodeRoutes.balance) { concat { get { askBalanceFromNode } } }
 
   lazy val transactionRoutes: Route = path(NodeRoutes.transactions) {
     concat(
@@ -75,6 +78,14 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
     }
   }
 
+  private def askBalanceFromNode: Route = {
+    val balanceFuture: Future[Long] =
+      (node ? GetBalance(nodeId)).mapTo[Long]
+    onSuccess(balanceFuture) { balance =>
+      complete(balance.toString)
+    }
+  }
+
 }
 
 object NodeRoutes {
@@ -83,4 +94,5 @@ object NodeRoutes {
   val transactions = "transactions"
   val mine         = "mine"
   val messages     = "messages"
+  val balance      = "balance"
 }
