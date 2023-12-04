@@ -22,11 +22,10 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
 
   import Node._
 
-  private val broker     = context.actorOf(Broker.props, Broker.actorName)
+  private val broker     = context.actorOf(Broker.props(nodeId), Broker.actorName)
   private val miner      = context.actorOf(Miner.props, Miner.actorName)
   private val blockchain = context.actorOf(Blockchain.props(EmptyChain, nodeId), Blockchain.actorName)
   private val keeper     = context.actorOf(KeeperOfKeys.props(nodeId, mediator), KeeperOfKeys.actorName)
-  private val accountant = context.actorOf(Accountant.props, Accountant.actorName)
 
   mediator ! subscribeNewBlock(self)
   mediator ! subscribeTransaction(self)
@@ -75,7 +74,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case GetBalance(nodeId) =>
       val senderRef = sender
       blockchain.askAndMap(Blockchain.GetChain) { chain: Chain =>
-        accountant.askAndMap(Accountant.CalculateBalance(chain, nodeId)) { balance: Long => senderRef ! balance }
+        broker.askAndMap(Broker.CalculateBalance(chain, nodeId)) { balance: Long => senderRef ! balance }
       }
   }
 

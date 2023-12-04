@@ -15,26 +15,9 @@ sealed trait Chain {
     NonEmptyChain(blocks = this.blocks :+ newBlock)
   }
 
-  private def populatedBlocks: List[PopulatedBlock] = this.blocks.collect { case p: PopulatedBlock => p }
+  private def populatedBlocks: List[PopulatedBlock] = blocks.collect { case p: PopulatedBlock => p }
 
-  private def allTransactionsOnChain: List[Transaction] = populatedBlocks.flatMap(_.transactions)
-
-  private def transactionsTo(nodeId: String): List[Transaction] =
-    allTransactionsOnChain.filter(_.beneficiary == nodeId)
-
-  private def transactionsFrom(nodeId: String): List[Transaction] =
-    allTransactionsOnChain.filter(_.originator == nodeId)
-
-  def messageTransactionsTo(nodeId: String): List[MessageTransaction] = transactionsTo(nodeId).collect {
-    case m: MessageTransaction => m
-  }
-
-  def messageTransactionsFrom(nodeId: String): List[MessageTransaction] = transactionsFrom(nodeId).collect {
-    case m: MessageTransaction => m
-  }
-
-  def miningRewardsTo(nodeId: String): List[MiningReward] = transactionsTo(nodeId).collect { case m: MiningReward => m }
-
+  def allTransactions: List[Transaction] = populatedBlocks.flatMap(_.transactions)
 }
 
 case class NonEmptyChain(blocks: List[Block]) extends Chain
@@ -60,6 +43,6 @@ case class PopulatedBlock(
 
 case object GenesisBlock extends Block {
   override val index: Long     = 0
-  override val hash: String    = Crypto.sha256Hash("GenesisBlock")
+  override val hash: String    = Crypto.sha256Hash(this.getClass.getName)
   override val timestamp: Long = 0
 }

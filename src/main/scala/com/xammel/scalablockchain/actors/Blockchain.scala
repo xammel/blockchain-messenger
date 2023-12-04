@@ -12,7 +12,7 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
   override def persistenceId: String = s"chainer-$nodeId"
 
   private var state: Chain                       = chain
-  def receivedMessages: List[MessageTransaction] = state.messageTransactionsTo(nodeId)
+  def receivedMessages: List[MessageTransaction] = state.allTransactions.toNode(nodeId).collectMessageTransactions
 
   override def receiveRecover: Receive = {
     case RecoveryCompleted      => log.info("Recovery completed")
