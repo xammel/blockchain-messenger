@@ -31,7 +31,9 @@ class Broker(nodeId: String) extends ScalaBlockchainActor[Broker.BrokerMessage] 
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
       sender ! pending
-    case DiffTransaction(externalTransactions) => pending = pending diff externalTransactions
+    case DiffTransaction(externalTransactions) =>
+      //TODO need to change this to be a diff that compares transactionId not whole case classes
+      pending = pending diff externalTransactions
     case CalculateBalance(chain, nodeId)       => sender ! balance(chain, nodeId)
     //TODO unsure on the use of this
     //    case SubscribeAck(Subscribe("transaction", None, `self`)) => log.info("subscribing")

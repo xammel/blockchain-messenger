@@ -12,7 +12,7 @@ import com.xammel.scalablockchain.actors.Node._
 import com.xammel.scalablockchain.json.JsonSupport
 import com.xammel.scalablockchain.models.{Chain, MessageTransaction}
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 trait NodeRoutes extends SprayJsonSupport with JsonSupport {
@@ -73,7 +73,10 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   private def tellNodeToReadMessages: Route = {
     val messagesRetrieved: Future[List[MessageTransaction]] = (node ? ReadMessages).mapTo[List[MessageTransaction]]
+    val msgs = Await.result(messagesRetrieved, Duration.Inf)
     onSuccess(messagesRetrieved) { messages =>
+      println(msgs)
+      println(msgs.map(_.transactionId))
       complete(messages)
     }
   }

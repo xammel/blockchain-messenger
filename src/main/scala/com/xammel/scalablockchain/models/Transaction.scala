@@ -11,6 +11,7 @@ sealed trait Transaction {
 }
 
 object Transaction {
+
   implicit class TransactionHelpers(transactions: List[Transaction]) {
     def collectMessageTransactions: List[MessageTransaction] = transactions.collect { case m: MessageTransaction => m }
 
@@ -20,6 +21,7 @@ object Transaction {
 
     def toNode(nodeId: String): List[Transaction] = transactions.filter(_.beneficiary == nodeId)
   }
+
 }
 
 case class MiningReward(originator: String, beneficiary: String) extends Transaction {
@@ -32,4 +34,14 @@ case class MessageTransaction(
     message: String
 ) extends Transaction {
   override val value: Long = 1 //TODO review
+  private lazy val id      = this.transactionId
+
+  def copy(message: String): MessageTransaction = new MessageTransaction(
+    originator = this.originator,
+    beneficiary = this.beneficiary,
+    message = message
+  ) {
+    override val transactionId: String = id
+  }
+
 }
