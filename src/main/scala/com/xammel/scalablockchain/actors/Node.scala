@@ -107,11 +107,9 @@ object Node extends ActorName {
 
   case object Mine extends NodeMessage
 
-  case object GetStatus extends NodeMessage
-
-  case class GetRecipientPublicKey(recipientNodeId: String) extends NodeMessage
-  case object ReadMessages                                  extends NodeMessage
-  case class GetBalance(nodeId: String)                     extends NodeMessage
+  case object GetStatus                 extends NodeMessage
+  case object ReadMessages              extends NodeMessage
+  case class GetBalance(nodeId: String) extends NodeMessage
 
   def props(nodeId: String, mediator: ActorRef): Props = Props(new Node(nodeId, mediator))
 

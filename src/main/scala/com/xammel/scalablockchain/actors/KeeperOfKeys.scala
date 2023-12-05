@@ -15,35 +15,42 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
 
   mediator ! subscribeGetPublicKey(self)
 
-  lazy val keyPair: KeyPair                                       = Crypto.generateKeyPair
-  private lazy val (privateKey: PrivateKey, publicKey: PublicKey) = (keyPair.getPrivate, keyPair.getPublic)
+  private lazy val keyPair: KeyPair       = Crypto.generateKeyPair
+  private lazy val privateKey: PrivateKey = keyPair.getPrivate
+  private lazy val publicKey: PublicKey   = keyPair.getPublic
   //TODO currently using host node to encrypt the message, not the recipient public key!
-  private lazy val encryptor: String => String                    = encrypt(publicKey)
-  private lazy val decryptor: String => String                    = decrypt(privateKey)
+  private lazy val decryptor: String => String = decrypt(privateKey)
 
   override def handleMessages: ReceiveType[KeeperOfKeys.KeeperMessage] = {
-    case EncryptMessage(messageTxn) => sender ! messageTxn.copy(message = encryptor(messageTxn.message))
-    case GetPublicKey(messageTxn) =>
+    case EncryptMessage(messageTxn) =>
       val senderRef = sender
-      val publish   = publishGetPublicKey(GetRecipientPublicKey(messageTxn))
+      self.askAndMap(GetRecipientPublicKey(messageTxn)) { publicKey: PublicKey =>
+        val encryptor: String => String = encrypt(publicKey)
+        senderRef ! messageTxn.copy(message = encryptor(messageTxn.message))
+      }
+    case GetRecipientPublicKey(messageTxn) =>
+      val senderRef = sender
+      val publish   = publishGetPublicKey(GetPublicKeyMessage(messageTxn))
       mediator.askAndMap(publish) { key => senderRef ! key }
-    case GetRecipientPublicKey(messageTxn) if messageTxn.beneficiary != nodeId => //ignore
-    case GetRecipientPublicKey(messageTxn) if messageTxn.beneficiary == nodeId => sender ! publicKey
+    case GetPublicKeyMessage(messageTxn) if messageTxn.beneficiary != nodeId => //ignore
+    case GetPublicKeyMessage(messageTxn) if messageTxn.beneficiary == nodeId => sender ! publicKey
     case ReadMessages(messageTxns) =>
       val decryptedMessages: List[MessageTransaction] = messageTxns.map { messageTxn =>
+        //TODO copy here may change the message transaction id
         messageTxn.copy(message = decryptor(messageTxn.message))
       }
       sender ! decryptedMessages
   }
+
 }
 
 object KeeperOfKeys extends ActorName {
   sealed trait KeeperMessage
 
-  case class EncryptMessage(messageTransaction: MessageTransaction)       extends KeeperMessage
-  case class GetRecipientPublicKey(message: MessageTransaction)           extends KeeperMessage
-  case class ReadMessages(messageTransactions: List[MessageTransaction])  extends KeeperMessage
-  private case class GetPublicKey(messageTransaction: MessageTransaction) extends KeeperMessage
+  case class EncryptMessage(messageTransaction: MessageTransaction)                extends KeeperMessage
+  case class GetPublicKeyMessage(message: MessageTransaction)                      extends KeeperMessage
+  case class ReadMessages(messageTransactions: List[MessageTransaction])           extends KeeperMessage
+  private case class GetRecipientPublicKey(messageTransaction: MessageTransaction) extends KeeperMessage
 
   def props(nodeId: String, mediator: ActorRef): Props = Props(new KeeperOfKeys(nodeId, mediator))
 
