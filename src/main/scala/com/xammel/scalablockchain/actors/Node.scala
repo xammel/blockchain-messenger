@@ -45,6 +45,7 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
             s"Node ${messageTransaction.originator} has a balance of $balance which is insufficient to schedule this message, costing ${messageTransaction.value}"
           )
         else
+          //TODO need to publish the finished message case class (with encryption) otherwise the IDs are different
           mediator ! publishTransaction(TransactionMessage(messageTransaction, nodeId))
       }
     case CheckPowSolution(solution) =>

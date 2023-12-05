@@ -17,6 +17,7 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
 
   lazy val keyPair: KeyPair                                       = Crypto.generateKeyPair
   private lazy val (privateKey: PrivateKey, publicKey: PublicKey) = (keyPair.getPrivate, keyPair.getPublic)
+  //TODO currently using host node to encrypt the message, not the recipient public key!
   private lazy val encryptor: String => String                    = encrypt(publicKey)
   private lazy val decryptor: String => String                    = decrypt(privateKey)
 
