@@ -1,4 +1,5 @@
 import Dependencies._
+import com.typesafe.sbt.SbtMultiJvm.multiJvmSettings
 
 ThisBuild / scalaVersion     := "2.12.4"
 ThisBuild / version          := "0.1.0-SNAPSHOT"
@@ -10,6 +11,7 @@ lazy val root = (project in file("."))
     name := "scala-blockchain",
     libraryDependencies ++= Seq(
       "com.typesafe.akka"        %% "akka-testkit"            % akkaVersion      % Test,
+      "com.typesafe.akka"        %% "akka-multi-node-testkit" % akkaVersion      % Test,
       "org.scalactic"            %% "scalactic"               % scalaTestVersion,
       "org.scalatest"            %% "scalatest"               % scalaTestVersion % "test",
       "com.typesafe.akka"        %% "akka-persistence"        % akkaVersion,
@@ -22,6 +24,12 @@ lazy val root = (project in file("."))
       "com.typesafe.akka"        %% "akka-cluster"            % akkaVersion,
       "com.typesafe.akka"        %% "akka-cluster-tools"      % akkaVersion
     )
+  )
+  .enablePlugins(MultiJvmPlugin) // use the plugin
+  .configs(MultiJvm) // load the multi-jvm configuration
+  .settings(multiJvmSettings: _*) // apply the default settings
+  .settings(
+    parallelExecution in Test := false // do not run test cases in parallel
   )
 
 // See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.

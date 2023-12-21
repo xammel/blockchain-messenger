@@ -66,7 +66,10 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
         proofOfWorkFuture givenSuccess { rewardMiningAndAddBlock }
       }
     case GetTransactions => broker forward Broker.GetPendingTransactions
-    case GetStatus       => blockchain forward Blockchain.GetChain
+    case GetStatus       => {
+      println("\n\n woohoo! \n\n")
+      blockchain forward Blockchain.GetChain
+    }
     case ReadMessages =>
       val senderRef = sender
       blockchain.askAndMap(Blockchain.CollectReceivedMessages) { receivedMessages: List[MessageTransaction] =>

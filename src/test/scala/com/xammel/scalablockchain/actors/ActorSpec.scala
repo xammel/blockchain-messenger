@@ -2,7 +2,9 @@ package com.xammel.scalablockchain.actors
 
 import akka.actor.ActorSystem
 import akka.cluster.pubsub.DistributedPubSub
+import akka.remote.testkit.MultiNodeConfig
 import akka.testkit.{ImplicitSender, TestKit}
+import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
