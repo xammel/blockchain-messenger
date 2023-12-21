@@ -3,6 +3,7 @@ package com.xammel.scalablockchain.crypto
 import com.xammel.scalablockchain.crypto.Crypto.sha256Hash
 import org.scalatest.flatspec._
 import org.scalatest.matchers._
+
 class CryptoSpec extends AnyFlatSpec with should.Matchers {
 
   lazy val testString     = "testString"
@@ -11,4 +12,5 @@ class CryptoSpec extends AnyFlatSpec with should.Matchers {
   "sha256Hash" should "hash the input with the SHA-256 algorithm" in {
     sha256Hash(testString) shouldEqual expectedResult
   }
+
 }
