@@ -67,7 +67,6 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       }
     case GetTransactions => broker forward Broker.GetPendingTransactions
     case GetStatus       => {
-      println("\n\n woohoo! \n\n")
       blockchain forward Blockchain.GetChain
     }
     case ReadMessages =>

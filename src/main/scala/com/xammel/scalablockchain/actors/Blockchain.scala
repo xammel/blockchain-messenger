@@ -21,7 +21,10 @@ class Blockchain(chain: Chain, nodeId: String) extends PersistentActor with Acto
 
   override def receiveCommand: Receive = {
     case command: AddBlockCommand => persist(command)(updateState)
-    case GetChain                 => sender ! state
+    case GetChain                 => {
+      log.info(s"\n\n $state")
+      sender ! state
+    }
     case GetLastHash              => sender ! state.mostRecentBlocksHash
     case CollectReceivedMessages  => sender ! receivedMessages
   }
