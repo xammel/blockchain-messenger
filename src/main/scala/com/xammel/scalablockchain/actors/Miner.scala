@@ -18,13 +18,14 @@ class Miner extends ScalaBlockchainActor[Miner.MinerMessage] {
   }
 
   private def ready: Receive = validate orElse {
+    case GetStatus => sender ! Ready
     case Mine(hash) =>
+      become(busy)
       log.info(s"Mining hash $hash...")
       val proof: Future[Long] = Future {
         proofOfWork(hash)
       }
       sender ! proof
-      become(busy)
     case ReadyYourself =>
       log.info("I'm ready to mine!")
       sender ! Success("OK")
@@ -42,6 +43,7 @@ class Miner extends ScalaBlockchainActor[Miner.MinerMessage] {
   }
 
   private def busy: Receive = validate orElse {
+    case GetStatus => sender ! Busy
     case Mine(_) =>
       log.info("I'm already mining")
       sender ! Failure(MinerBusyException)
@@ -57,6 +59,11 @@ object Miner extends ActorName {
   case class Validate(hash: String, proof: Long) extends MinerMessage
   case class Mine(hash: String)                  extends MinerMessage
   case object ReadyYourself                      extends MinerMessage
+  case object GetStatus extends MinerMessage
+
+  sealed trait MinerStatus
+  case object Busy extends MinerStatus
+  case object Ready extends MinerStatus
 
   val props: Props = Props(new Miner)
 }

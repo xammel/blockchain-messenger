@@ -7,7 +7,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
 abstract class ScalaTestMultiNodeSpec
-    extends MultiNodeSpec(NodeMultiNodeConfig)
+    extends MultiNodeSpec(BlockchainMultiNodeConfig)
     with ImplicitSender
     with MultiNodeSpecCallbacks
     with AnyWordSpecLike

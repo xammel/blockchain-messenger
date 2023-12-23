@@ -4,7 +4,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import com.typesafe.config.ConfigFactory
 
-object NodeMultiNodeConfig extends MultiNodeConfig {
+object BlockchainMultiNodeConfig extends MultiNodeConfig {
 
   val node1 = role("node1")
   val node2 = role("node2")
