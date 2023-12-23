@@ -1,10 +1,11 @@
 package com.xammel.scalablockchain.actors
 
-import akka.actor.{ActorRef, _}
+import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent.{CurrentClusterState, MemberUp}
 import akka.cluster.pubsub.DistributedPubSub
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
+import com.xammel.scalablockchain.models.MiningReward
 import com.xammel.scalablockchain.models._
 
 import scala.concurrent.Await
@@ -30,7 +31,6 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
     Thread.sleep(1000)
     awaitAssert(
       {
-        println("Waiting for miner to be ready")
         minerActor ! Miner.GetStatus
         expectMsg(Miner.Ready) == Miner.Ready
       },
@@ -91,9 +91,13 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
         getActor(Node) ! Node.GetStatus
         val chain: NonEmptyChain = expectMsgType[NonEmptyChain]
 
-        chain.blocks.length shouldBe 2
-        chain.blocks.head shouldBe GenesisBlock
-        chain.blocks.last shouldBe a[PopulatedBlock]
+        import chain.blocks
+        import blocks.{head => block1, last => block2}
+
+        blocks.length shouldBe 2
+        block1 shouldBe GenesisBlock
+        block2 shouldBe a[PopulatedBlock]
+        block2.asInstanceOf[PopulatedBlock].transactions should be(List(MiningReward("theBank", node1.name)))
       }
 
       testConductor.enter("status-test-done")
