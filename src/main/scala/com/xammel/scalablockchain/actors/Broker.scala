@@ -30,6 +30,7 @@ class Broker(nodeId: String) extends ScalaBlockchainActor[Broker.BrokerMessage] 
       log.info(s"Added transaction ${transaction.transactionId} to pending transactions")
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
+      log.info(pending.toString)
       sender ! pending
     case DiffTransaction(externalTransactions) =>
       //TODO need to change this to be a diff that compares transactionId not whole case classes

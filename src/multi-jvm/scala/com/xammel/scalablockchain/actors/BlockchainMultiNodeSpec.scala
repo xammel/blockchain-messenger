@@ -7,7 +7,7 @@ import akka.cluster.pubsub.DistributedPubSub
 import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import com.xammel.scalablockchain.models.MiningReward
 import com.xammel.scalablockchain.models._
-
+import MultiJvmTestData._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -44,13 +44,15 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
 
     "start all nodes" in within(15.seconds) {
 
-      Cluster(system).subscribe(testActor, classOf[MemberUp])
+      lazy val cluster = Cluster(system)
+
+      cluster.subscribe(testActor, classOf[MemberUp])
       expectMsgClass(classOf[CurrentClusterState])
 
       val firstAddress  = node(node1).address
       val secondAddress = node(node2).address
 
-      Cluster(system).join(firstAddress)
+      cluster.join(firstAddress)
 
       lazy val mediator = DistributedPubSub(system).mediator
 
@@ -64,7 +66,7 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
 
       receiveN(2).collect { case MemberUp(m) => m.address }.toSet should be(Set(firstAddress, secondAddress))
 
-      Cluster(system).unsubscribe(testActor)
+      cluster.unsubscribe(testActor)
 
       testConductor.enter("all-up")
     }
@@ -101,6 +103,19 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
       }
 
       testConductor.enter("status-test-done")
+    }
+
+    "publish pending transactions to other nodes" in {
+      // Add transaction to pending
+      runOn(node2) {
+        getActor(Node) ! Node.AddTransaction(testMessage)
+        Thread.sleep(5000)
+        getActor(Broker) ! Broker.GetPendingTransactions
+        expectMsg(List(testMessage))
+//        awaitAssert(expectMsg(List(testMessage)) == List(testMessage))
+      }
+
+      testConductor.enter("pending-transaction-test-done")
     }
   }
 
