@@ -33,11 +33,9 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
   miner ! ReadyYourself
 
   override def handleMessages: ReceiveType[NodeMessage] = {
-    case TransactionMessage(message, senderNodeId) =>
+    case TransactionMessage(encryptedMessage, senderNodeId) =>
       log.info(s"Received message from node $senderNodeId to add a transaction to the pending list")
-      keeper.askAndMap(KeeperOfKeys.EncryptMessage(message)) { encryptedMessage: MessageTransaction =>
-        broker ! Broker.AddTransactionToPending(encryptedMessage)
-      }
+      broker ! Broker.AddTransactionToPending(encryptedMessage)
     case AddTransaction(messageTransaction) =>
       self.askAndMap(GetBalance(messageTransaction.originator)) { balance: Long =>
         if (balance < messageTransaction.value)
@@ -45,8 +43,9 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
             s"Node ${messageTransaction.originator} has a balance of $balance which is insufficient to schedule this message, costing ${messageTransaction.value}"
           )
         else
-          //TODO need to publish the finished message case class (with encryption) otherwise the IDs are different
-          mediator ! publishTransaction(TransactionMessage(messageTransaction, nodeId))
+          keeper.askAndMap(KeeperOfKeys.EncryptMessage(messageTransaction)) { encryptedMessage: MessageTransaction =>
+            mediator ! publishTransaction(TransactionMessage(encryptedMessage, nodeId))
+          }
       }
     case CheckPowSolution(solution) =>
       val senderRef = sender
@@ -75,7 +74,9 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
     case GetBalance(nodeId) =>
       val senderRef = sender
       blockchain.askAndMap(Blockchain.GetChain) { chain: Chain =>
-        broker.askAndMap(Broker.CalculateBalance(chain, nodeId)) { balance: Long => senderRef ! balance }
+        broker.askAndMap(Broker.CalculateBalance(chain, nodeId)) { balance: Long =>
+          senderRef ! balance
+        }
       }
   }
 

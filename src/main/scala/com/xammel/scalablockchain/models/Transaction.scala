@@ -36,12 +36,21 @@ case class MessageTransaction(
   override val value: Long = 1 //TODO review
   private lazy val id      = this.transactionId
 
-  def copy(message: String): MessageTransaction = new MessageTransaction(
-    originator = this.originator,
-    beneficiary = this.beneficiary,
-    message = message
-  ) {
-    override val transactionId: String = id
-  }
+  def copy(message: String): MessageTransaction =
+    new MessageTransaction(
+      originator = this.originator,
+      beneficiary = this.beneficiary,
+      message = message
+    ) {
+      override val transactionId: String = id
+    }
 
+  def setTransactionId(id: String): MessageTransaction =
+    new MessageTransaction(
+      originator = this.originator,
+      beneficiary = this.beneficiary,
+      message = this.message
+    ) {
+      override val transactionId: String = id
+    }
 }

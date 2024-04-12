@@ -8,7 +8,11 @@ import akka.remote.transport.ActorTransportAdapter.AskTimeout
 import com.xammel.scalablockchain.models.MiningReward
 import com.xammel.scalablockchain.models._
 import MultiJvmTestData._
-import scala.concurrent.Await
+import akka.pattern.ask
+import com.xammel.scalablockchain.actors.KeeperOfKeys.EncryptMessage
+import com.xammel.scalablockchain.actors.Node.ReadMessages
+
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
@@ -111,11 +115,37 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
         getActor(Node) ! Node.AddTransaction(testMessage)
         Thread.sleep(5000)
         getActor(Broker) ! Broker.GetPendingTransactions
-        expectMsg(List(testMessage))
-//        awaitAssert(expectMsg(List(testMessage)) == List(testMessage))
+        val messages = expectMsgType[List[MessageTransaction]]
+        messages.length shouldBe 1
+        messages.head.transactionId shouldEqual testMessage.transactionId
+      }
+
+      runOn(node1) {
+        Thread.sleep(5000)
+        getActor(Broker) ! Broker.GetPendingTransactions
+        val messages = expectMsgType[List[MessageTransaction]]
+        messages.length shouldBe 1
+        messages.head.transactionId shouldEqual testMessage.transactionId
       }
 
       testConductor.enter("pending-transaction-test-done")
+    }
+
+    "allow the recipient to decrypt the message" in {
+
+      runOn(node2) {
+
+        getActor(Node) ! Node.Mine
+        awaitMinerToBeReady(getActor(Miner))
+        Thread.sleep(5000)
+
+        val messagesRetrieved: Future[List[MessageTransaction]] = (getActor(Node) ? ReadMessages).mapTo[List[MessageTransaction]]
+        val msgs                                                = Await.result(messagesRetrieved, Duration.Inf)
+        println("\n\n", msgs)
+        msgs.length shouldBe 1
+        msgs.head.message shouldEqual testMessage.message
+      }
+      testConductor.enter("decrypt-test-done")
     }
   }
 

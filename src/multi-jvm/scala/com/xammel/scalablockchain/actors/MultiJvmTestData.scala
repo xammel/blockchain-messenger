@@ -6,6 +6,6 @@ import com.xammel.scalablockchain.models.MessageTransaction
 object MultiJvmTestData {
 
   lazy val testMessage: MessageTransaction =
-    MessageTransaction(originator = node1.name, beneficiary = node2.name, message = "hello there node2")
+    MessageTransaction(originator = node1.name, beneficiary = node2.name, message = "hello there node2").setTransactionId("id1")
 
 }
