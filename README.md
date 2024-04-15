@@ -162,3 +162,7 @@ Returns the tokens owned by the node where this command is executed.
 Example Response: 
 
 `19`
+
+# Credits
+
+The first components of this project were written following Luca Florio's tutorial. His code is hosted in this repo: https://github.com/elleFlorio/scalachain
