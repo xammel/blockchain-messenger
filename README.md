@@ -111,6 +111,10 @@ Example Response:
 ```json
 OK
 ```
+OR
+```json
+Node {node_id} has a balance of {X} which is insufficient to schedule this message, costing {Y}
+```
 
 ### mine
 
