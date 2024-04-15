@@ -25,7 +25,7 @@ class Broker(nodeId: String) extends ScalaBlockchainActor[Broker.BrokerMessage] 
   override def handleMessages: ReceiveType[BrokerMessage] = {
     case AddTransactionToPending(transaction) =>
       pending = pending :+ transaction
-      log.info(s"Added transaction ${transaction.transactionId} to pending transactions")
+      log.info(s"Added transaction ${transaction.id} to pending transactions")
     case GetPendingTransactions =>
       log.info(s"Getting pending transactions")
       log.info(pending.toString)

@@ -117,7 +117,7 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
         getActor(Broker) ! Broker.GetPendingTransactions
         val messages = expectMsgType[List[MessageTransaction]]
         messages.length shouldBe 1
-        messages.head.transactionId shouldEqual testMessage.transactionId
+        messages.head.id shouldEqual testMessage.id
       }
 
       runOn(node1) {
@@ -125,7 +125,7 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
         getActor(Broker) ! Broker.GetPendingTransactions
         val messages = expectMsgType[List[MessageTransaction]]
         messages.length shouldBe 1
-        messages.head.transactionId shouldEqual testMessage.transactionId
+        messages.head.id shouldEqual testMessage.id
       }
 
       testConductor.enter("pending-transaction-test-done")

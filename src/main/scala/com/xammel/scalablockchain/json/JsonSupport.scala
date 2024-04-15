@@ -20,7 +20,7 @@ trait JsonSupport extends DefaultJsonProtocol {
 
   implicit object MessageJsonFormat extends RootJsonFormat[MessageTransaction] {
     def write(msg: MessageTransaction): JsValue = JsObject(
-      transactionId -> JsString(msg.transactionId),
+      transactionId -> JsString(msg.id),
       originator    -> JsString(msg.originator),
       beneficiary   -> JsString(msg.beneficiary),
       message       -> JsString(msg.message),
@@ -37,17 +37,6 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
   }
 
-//  trait Help[T] {
-//    val expectedFields: Seq[String]
-//    def p: PartialFunction[Seq[JsValue], T]
-//    def read(jsValue: JsValue): T = {
-//       jsValue.asJsObject.getFields(expectedFields:_*) match {
-//         case seq => p.apply()
-//        case seq => throw DeserializationError(seq, expectedFields)
-//       }
-//    }
-//  }
-
   implicit object MiningRewardJsonFormat extends RootJsonFormat[MiningReward] {
     override def read(json: JsValue): MiningReward = {
       val expectedFields = Seq(originator, beneficiary)
@@ -58,7 +47,7 @@ trait JsonSupport extends DefaultJsonProtocol {
     }
 
     override def write(obj: MiningReward): JsValue = JsObject(
-      transactionId -> JsString(obj.transactionId),
+      transactionId -> JsString(obj.id),
       originator    -> JsString(obj.originator),
       beneficiary   -> JsString(obj.beneficiary),
       value         -> JsNumber(obj.value)
@@ -146,7 +135,7 @@ trait JsonSupport extends DefaultJsonProtocol {
 }
 
 object JsonSupport {
-  val transactionId = "transactionId"
+  val transactionId = "id"
   val originator    = "originator"
   val beneficiary   = "beneficiary"
   val message       = "message"
