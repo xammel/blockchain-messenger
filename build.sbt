@@ -8,7 +8,7 @@ ThisBuild / organizationName := "xammel"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "scala-blockchain",
+    name := "blockchain-messenger",
     libraryDependencies ++= Seq(
       "com.typesafe.akka"        %% "akka-testkit"            % akkaVersion      % Test,
       "com.typesafe.akka"        %% "akka-multi-node-testkit" % akkaVersion      % Test,

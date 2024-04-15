@@ -7,8 +7,6 @@ class Broker(nodeId: String) extends ScalaBlockchainActor[Broker.BrokerMessage] 
 
   import Broker._
 
-  //TODO review default impl
-  //TODO does this need to be mutable?
   private var pending: List[Transaction]      = Nil
   private def pendingMessageTransactions      = pending.fromNode(nodeId).collectMessageTransactions
   private def pendingMessageTransactionsValue = pendingMessageTransactions.map(_.value).sum
@@ -33,11 +31,8 @@ class Broker(nodeId: String) extends ScalaBlockchainActor[Broker.BrokerMessage] 
       log.info(pending.toString)
       sender ! pending
     case DiffTransaction(externalTransactions) =>
-      //TODO need to change this to be a diff that compares transactionId not whole case classes
       pending = pending diff externalTransactions
     case CalculateBalance(chain, nodeId)       => sender ! balance(chain, nodeId)
-    //TODO unsure on the use of this
-    //    case SubscribeAck(Subscribe("transaction", None, `self`)) => log.info("subscribing")
   }
 
 }

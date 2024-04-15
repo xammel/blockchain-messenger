@@ -25,7 +25,7 @@ object Transaction {
 }
 
 case class MiningReward(originator: String, beneficiary: String) extends Transaction {
-  override val value: Long = 10 //TODO review
+  override val value: Long = 10
 }
 
 case class MessageTransaction(
@@ -33,7 +33,7 @@ case class MessageTransaction(
     beneficiary: String,
     message: String
 ) extends Transaction {
-  override val value: Long = 1 //TODO review
+  override val value: Long = 1
   private lazy val id      = this.transactionId
 
   def copy(message: String): MessageTransaction =

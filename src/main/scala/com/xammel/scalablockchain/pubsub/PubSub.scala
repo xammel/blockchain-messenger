@@ -14,8 +14,7 @@ object PubSub {
   def publishNewBlock(addBlock: Node.AddBlock) = Publish(newBlock, addBlock)
   def subscribeTransaction(actor: ActorRef)    = Subscribe(transaction, actor)
 
-  def publishTransaction(transactionMessage: Node.TransactionMessage) =
-    Publish(transaction, transactionMessage)
+  def publishTransaction(transactionMessage: Node.TransactionMessage) = Publish(transaction, transactionMessage)
 
   def subscribeGetPublicKey(actor: ActorRef)                     = Subscribe(getPublicKey, actor)
   def publishGetPublicKey(get: KeeperOfKeys.GetPublicKeyMessage) = Publish(getPublicKey, get)

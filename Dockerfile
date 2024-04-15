@@ -1,4 +1,4 @@
-# Example usage: docker build --build-arg SBT_VERSION="1.2.7" --build-arg SSH_PRIVATE_KEY="$(cat ./docker/repo-key)" -t xammel/scala-blockchain .
+# Example usage: docker build --build-arg SBT_VERSION="1.2.7" --build-arg SSH_PRIVATE_KEY="$(cat ./docker/repo-key)" -t xammel/blockchain-messenger .
 
 FROM openjdk:8-jre-alpine
 
@@ -20,7 +20,7 @@ RUN echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_rsa
 RUN echo "IdentityFile /root/.ssh/id_rsa" >> /etc/ssh/ssh_config && \
     echo -e "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
 
-RUN git clone git@github.com:xammel/scala-blockchain.git
+RUN git clone git@github.com:xammel/blockchain-messenger.git
 
 # SBT
 ARG SBT_VERSION
