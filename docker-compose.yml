@@ -9,7 +9,7 @@ services:
       - scala-blockchain-network
     image: xammel/scala-blockchain
     volumes:
-      - ~/repos/scala-blockchain/:/tmp/scala-blockchain
+      - ~/dev/scala/blockchain-messaging-app:/tmp/scala-blockchain
     ports:
       - '2552:2552'
       - '8000:8080'
@@ -26,7 +26,7 @@ services:
       - scala-blockchain-network
     image: xammel/scala-blockchain
     volumes:
-      - ~/repos/scala-blockchain/:/tmp/scala-blockchain
+      - ~/dev/scala/blockchain-messaging-app:/tmp/scala-blockchain
     ports:
       - '8001:8080'
     environment:
@@ -45,7 +45,7 @@ services:
       - scala-blockchain-network
     image: xammel/scala-blockchain
     volumes:
-      - ~/repos/scala-blockchain/:/tmp/scala-blockchain
+      - ~/dev/scala/blockchain-messaging-app:/tmp/scala-blockchain
     ports:
       - '8002:8080'
     environment:
