@@ -25,13 +25,13 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   implicit lazy val timeout = Timeout(5.seconds)
 
-  lazy val messengerRoutes: Route = path(NodeRoutes.messages) { get { tellNodeToReadMessages } }
+  lazy val messengerRoutes: Route = path(NodeRoutes.myMessages) { get { tellNodeToReadMessages } }
 
   lazy val statusRoutes: Route = path(NodeRoutes.status) { concat { get { askStatusFromNode } } }
 
   lazy val balanceRoutes: Route = path(NodeRoutes.balance) { concat { get { askBalanceFromNode } } }
 
-  lazy val transactionRoutes: Route = path(NodeRoutes.transactions) {
+  lazy val transactionRoutes: Route = path(NodeRoutes.messages) {
     concat(
       get {
         askTransactionsFromNode
@@ -73,7 +73,7 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   private def tellNodeToReadMessages: Route = {
     val messagesRetrieved: Future[List[MessageTransaction]] = (node ? ReadMessages).mapTo[List[MessageTransaction]]
-    val msgs = Await.result(messagesRetrieved, Duration.Inf)
+    val msgs                                                = Await.result(messagesRetrieved, Duration.Inf)
     onSuccess(messagesRetrieved) { messages =>
       println(msgs)
       println(msgs.map(_.transactionId))
@@ -93,9 +93,9 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
 object NodeRoutes {
   // URL paths
-  val status       = "status"
-  val transactions = "transactions"
-  val mine         = "mine"
-  val messages     = "messages"
-  val balance      = "balance"
+  val status     = "status"
+  val mine       = "mine"
+  val messages   = "messages"
+  val myMessages = "my-messages"
+  val balance    = "balance"
 }
