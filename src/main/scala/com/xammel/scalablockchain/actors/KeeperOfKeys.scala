@@ -38,8 +38,10 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
     }
     case ReadMessages(messageTxns) =>
       val decryptedMessages: List[MessageTransaction] = messageTxns.map { messageTxn =>
+        println("messagetxn message:", messageTxn.message)
         messageTxn.copy(message = decryptor(messageTxn.message))
       }
+      println("done decrypting")
       sender ! decryptedMessages
   }
 

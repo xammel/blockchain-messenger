@@ -4,7 +4,7 @@ import scala.util.Random
 
 sealed trait Transaction {
   //  TODO make this generation a method to ensure no possibility of duplicate IDs
-  val transactionId: String = Random.alphanumeric.take(6).mkString
+  val id: String = Random.alphanumeric.take(6).mkString
   val originator: String
   val beneficiary: String
   val value: Long
@@ -25,7 +25,7 @@ object Transaction {
 }
 
 case class MiningReward(originator: String, beneficiary: String) extends Transaction {
-  override val value: Long = 10 //TODO review
+  override val value: Long = 10
 }
 
 case class MessageTransaction(
@@ -33,8 +33,8 @@ case class MessageTransaction(
     beneficiary: String,
     message: String
 ) extends Transaction {
-  override val value: Long = 1 //TODO review
-  private lazy val id      = this.transactionId
+  override val value: Long = 1
+  private lazy val idCopy  = this.id
 
   def copy(message: String): MessageTransaction =
     new MessageTransaction(
@@ -42,15 +42,15 @@ case class MessageTransaction(
       beneficiary = this.beneficiary,
       message = message
     ) {
-      override val transactionId: String = id
+      override val id: String = idCopy
     }
 
-  def setTransactionId(id: String): MessageTransaction =
+  def setTransactionId(manualId: String): MessageTransaction =
     new MessageTransaction(
       originator = this.originator,
       beneficiary = this.beneficiary,
       message = this.message
     ) {
-      override val transactionId: String = id
+      override val id: String = manualId
     }
 }

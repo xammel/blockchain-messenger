@@ -12,11 +12,12 @@ then
         cp -r ${SOURCE_FOLDER}/. /development
     fi
         cd /development
-#else
-#    echo "Running repo source code"
-#    cd scalachain
-#    git fetch
-#    git checkout $SOURCE && git pull
+else
+    echo "Running repo source code"
+    cd blockchain-messenger
+    git checkout main
+    git fetch
+    git pull
 fi
 
 sbt "run 0.0.0.0 8080"

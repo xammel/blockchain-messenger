@@ -9,15 +9,6 @@ import com.xammel.scalablockchain.pubsub.PubSub._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-/*
-Plan:
-- Blockchain-based messaging service
-- To be a participant in messaging, you must be a node hosting the blockchain
-- Sending a message costs money, mining a block earns money
-- Each node has a private and public key. Messages stored on the blockchain are encrypted with the recipient's public key.
-  It can be decrypted with the recipient's private key.
-- Voila
- */
 class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node.NodeMessage] {
 
   import Node._
