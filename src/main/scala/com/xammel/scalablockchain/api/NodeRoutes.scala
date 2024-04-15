@@ -9,11 +9,14 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.xammel.scalablockchain.actors.Node
 import com.xammel.scalablockchain.actors.Node._
+import com.xammel.scalablockchain.api.NodeRoutes.messages
 import com.xammel.scalablockchain.json.JsonSupport
 import com.xammel.scalablockchain.models.{Chain, MessageTransaction}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
+import scala.util.{Failure, Success}
 
 trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
@@ -61,8 +64,10 @@ trait NodeRoutes extends SprayJsonSupport with JsonSupport {
 
   private def tellNodeToAddTransaction: Route = {
     entity(as[MessageTransaction]) { transaction =>
-      node ! AddTransaction(transaction)
-      complete(StatusCodes.OK)
+      val successMessage = (node ? AddTransaction(transaction)).mapTo[String]
+      onSuccess(successMessage) { msg: String =>
+        if (msg.isEmpty) complete(StatusCodes.OK) else complete(msg)
+      }
     }
   }
 

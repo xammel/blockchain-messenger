@@ -31,11 +31,10 @@ class KeeperOfKeys(nodeId: String, mediator: ActorRef) extends ScalaBlockchainAc
       val senderRef = sender
       val publish   = publishGetPublicKey(GetPublicKeyMessage(messageTxn))
       mediator.askAndMap(publish) { key => senderRef ! key }
-    case GetPublicKeyMessage(messageTxn) if messageTxn.beneficiary != nodeId => log.info(s"Not sending my public key")
-    case GetPublicKeyMessage(messageTxn) if messageTxn.beneficiary == nodeId => {
+    case GetPublicKeyMessage(messageTxn) if messageTxn.beneficiary != nodeId => // ignore
+    case GetPublicKeyMessage(messageTxn) if messageTxn.beneficiary == nodeId =>
       log.info(s"Sending public key to $sender")
       sender ! publicKey
-    }
     case ReadMessages(messageTxns) =>
       val decryptedMessages: List[MessageTransaction] = messageTxns.map { messageTxn =>
         println("messagetxn message:", messageTxn.message)

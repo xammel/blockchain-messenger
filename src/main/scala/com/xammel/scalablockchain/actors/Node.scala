@@ -28,15 +28,19 @@ class Node(nodeId: String, mediator: ActorRef) extends ScalaBlockchainActor[Node
       log.info(s"Received message from node $senderNodeId to add a transaction to the pending list")
       broker ! Broker.AddTransactionToPending(encryptedMessage)
     case AddTransaction(messageTransaction) =>
+      val senderRef = sender
       self.askAndMap(GetBalance(messageTransaction.originator)) { balance: Long =>
-        if (balance < messageTransaction.value)
-          log.error(
+        if (balance < messageTransaction.value) {
+          val message =
             s"Node ${messageTransaction.originator} has a balance of $balance which is insufficient to schedule this message, costing ${messageTransaction.value}"
-          )
-        else
+          log.error(message)
+          senderRef ! message
+        } else {
           keeper.askAndMap(KeeperOfKeys.EncryptMessage(messageTransaction)) { encryptedMessage: MessageTransaction =>
             mediator ! publishTransaction(TransactionMessage(encryptedMessage, nodeId))
           }
+          senderRef ! ""
+        }
       }
     case CheckPowSolution(solution) =>
       val senderRef = sender
