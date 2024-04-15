@@ -108,11 +108,11 @@ Add message to pending messages to be mined.
 `POST {{node_specific_url}}/messages`
 
 Example Response: 
-```json
+```
 OK
 ```
 OR
-```json
+```
 Node {node_id} has a balance of {X} which is insufficient to schedule this message, costing {Y}
 ```
 
@@ -128,7 +128,7 @@ The node that completes this action is rewarded with tokens.
 
 Example Response: 
 
-```json
+```
 OK
 ```
 
