@@ -34,13 +34,9 @@ object Crypto {
   }
 
   def decrypt(privateKey: PrivateKey)(encryptedMessage: String) = {
-    println("inside decrypt")
     val data           = base64Decode(encryptedMessage)
-    println("..... 1")
     val cipher: Cipher = Cipher.getInstance(RSA)
-    println("..... 2")
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
-    println("..... 3")
     new String(cipher.doFinal(data))
   }
 

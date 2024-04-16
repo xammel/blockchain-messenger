@@ -141,7 +141,6 @@ class BlockchainMultiNodeSpec extends ScalaTestMultiNodeSpec {
 
         val messagesRetrieved: Future[List[MessageTransaction]] = (getActor(Node) ? ReadMessages).mapTo[List[MessageTransaction]]
         val msgs                                                = Await.result(messagesRetrieved, Duration.Inf)
-        println("\n\n", msgs)
         msgs.length shouldBe 1
         msgs.head.message shouldEqual testMessage.message
       }
