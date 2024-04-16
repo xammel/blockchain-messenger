@@ -13,7 +13,7 @@ then
     fi
         cd /development
 else
-    echo "Running repo source code"
+    echo "Running repo code from remote"
     cd blockchain-messenger
     git checkout main
     git fetch

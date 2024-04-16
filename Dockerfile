@@ -1,26 +1,14 @@
-# Example usage: docker build --build-arg SBT_VERSION="1.2.7" --build-arg SSH_PRIVATE_KEY="$(cat ./docker/repo-key)" -t xammel/blockchain-messenger .
-
 FROM openjdk:8-jre-alpine
 
-ARG SSH_PRIVATE_KEY
+#ARG SSH_PRIVATE_KEY
+ARG SBT_VERSION="1.2.7"
 
 RUN apk add --no-cache git openssh && \
     mkdir /development
 
 # GIT
 
-RUN mkdir -p /root/.ssh/
-
-RUN touch /root/.ssh/id_rsa
-
-RUN chmod 600 /root/.ssh/id_rsa
-
-RUN echo "$SSH_PRIVATE_KEY" > /root/.ssh/id_rsa
-
-RUN echo "IdentityFile /root/.ssh/id_rsa" >> /etc/ssh/ssh_config && \
-    echo -e "StrictHostKeyChecking no" >> /etc/ssh/ssh_config
-
-RUN git clone git@github.com:xammel/blockchain-messenger.git
+RUN git clone https://github.com/xammel/blockchain-messenger.git
 
 # SBT
 ARG SBT_VERSION

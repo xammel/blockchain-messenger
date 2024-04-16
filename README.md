@@ -20,7 +20,7 @@ The following instructions will run a network of 3 nodes in a docker container. 
 - Clone this repository
 - Run the following command in the root of the repository: 
 ```bash 
-docker build --build-arg SBT_VERSION="1.2.7" --build-arg SSH_PRIVATE_KEY="$(cat ./docker/repo-key)" -t xammel/blockchain-messenger .
+docker build -t xammel/blockchain-messenger .
 ```
 - Run `docker-compose up`
 
